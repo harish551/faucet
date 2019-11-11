@@ -3,10 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/dpapathanasiou/go-recaptcha"
-	"github.com/joho/godotenv"
-	"github.com/tendermint/tmlibs/bech32"
-	"github.com/tomasen/realip"
 	"io"
 	"log"
 	"net/http"
@@ -14,6 +10,11 @@ import (
 	"os/exec"
 	"strings"
 	"time"
+
+	"github.com/dpapathanasiou/go-recaptcha"
+	"github.com/joho/godotenv"
+	"github.com/tendermint/tmlibs/bech32"
+	"github.com/tomasen/realip"
 )
 
 var chain string
@@ -128,18 +129,10 @@ func getCoinsHandler(w http.ResponseWriter, request *http.Request) {
 	// send the coins!
 	if captchaPassed {
 		sendFaucet := fmt.Sprintf(
-			"gaiacli send --to=%v --name=%v --chain-id=%v --amount=%v",
-			encodedAddress, key, chain, amountFaucet)
+			"akash send %v %v -k %v",
+			amountFaucet, encodedAddress, key)
 		fmt.Println(time.Now().UTC().Format(time.RFC3339), encodedAddress, "[1]")
 		executeCmd(sendFaucet, pass)
-
-		time.Sleep(5 * time.Second)
-
-		sendSteak := fmt.Sprintf(
-			"gaiacli send --to=%v --name=%v --chain-id=%v --amount=%v",
-			encodedAddress, key, chain, amountSteak)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), encodedAddress, "[2]")
-		executeCmd(sendSteak, pass)
 	}
 
 	return
