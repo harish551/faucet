@@ -3,7 +3,7 @@
   tm-cookie-consent
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom &copy; 2018 Interchain Foundation
+  #bottom Akash Network
 </template>
 
 
