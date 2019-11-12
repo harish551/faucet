@@ -105,10 +105,15 @@ export default {
           this.resetForm();
         })
         .catch(err => {
+          var msg = err.message;
+          if (err.response && err.response.data && err.response.data.message) {
+            msg = err.response.data.message;
+          }
+
           this.sending = false;
           this.$store.commit("notifyError", {
             title: "Error Sending",
-            body: `An error occurred while trying to send: "${err.message}"`
+            body: `An error occurred while trying to send: "${msg}"`
           });
         });
     },
