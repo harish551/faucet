@@ -1,13 +1,6 @@
 <template lang="pug">
 #app
   tm-cookie-consent
-  .top-bar
-    .left
-      .key testnet:
-      .value {{ config.chain }}
-    .right
-      a(href="https://explorecosmos.network" target="_blank") explorer #[i.material-icons assessment]
-  img(src="~assets/brandmark.png" width="512" height="512")
   router-view
   notifications(:notifications='notifications' theme='cosmos')
   #bottom &copy; 2018 Interchain Foundation
