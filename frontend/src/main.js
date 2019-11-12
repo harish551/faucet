@@ -6,7 +6,7 @@ import Vuelidate from "vuelidate";
 import VueAnalytics from "vue-analytics";
 
 Vue.use(Vuelidate);
-Vue.use(VueAnalytics, { id: "UA-51029217-5", router: router });
+Vue.use(VueAnalytics, { id: "UA-152074469-5", router: router });
 Vue.config.productionTip = false;
 
 new Vue({

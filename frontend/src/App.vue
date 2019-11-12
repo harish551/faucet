@@ -1,6 +1,5 @@
 <template lang="pug">
 #app
-  tm-cookie-consent
   router-view
   notifications(:notifications='notifications' theme='cosmos')
   #bottom Akash Network
@@ -9,14 +8,12 @@
 
 <script>
 import { mapGetters } from "vuex";
-import { TmCookieConsent } from "@tendermint/ui";
 import Notifications from "@nylira/vue-notifications";
 
 export default {
   name: "app",
   components: {
-    Notifications,
-    TmCookieConsent
+    Notifications
   },
   computed: {
     ...mapGetters(["notifications", "config"])
