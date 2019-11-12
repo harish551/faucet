@@ -11,11 +11,39 @@ import (
 	"strings"
 	"time"
 
+	"errors"
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
-	"gitlab.com/faucet/src/types"
+	"math"
 )
+
+type ErrorResponse struct {
+	Status  bool        `json:"status"`
+	Message string      `json:"message"`
+	Error   interface{} `json:"error"`
+}
+
+type SuccessResponse struct {
+	Status bool        `json:"status"`
+	Data   interface{} `json:"data"`
+}
+
+type AccountQueryRes struct {
+	Account_query []Account_query `json:"account_query"`
+	Raw           []Raw           `json:"raw"`
+}
+
+type Raw struct {
+	Address string `json:"address"`
+	Balance int    `json:"balance"`
+}
+
+type Account_query struct {
+	Balance            string `json:"balance"`
+	Nonce              string `json:"nonce"`
+	Public_key_address string `json:"public_key_address"`
+}
 
 var chain string
 var recaptchaSecretKey string
@@ -97,6 +125,29 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
+func CheckAccountBalance(address string, amountFaucet string, key string) error {
+	var queryRes AccountQueryRes
+
+	command := fmt.Sprintf("akash query account %s -m json", address)
+	fmt.Println(" command ", command)
+
+	out, accErr := exec.Command("bash", "-c", command).Output()
+
+	if accErr == nil {
+		if err := json.Unmarshal(out, &queryRes); err != nil {
+			fmt.Printf("Error unmarshalling command line output %v", err)
+			return err
+		}
+	}
+
+	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(1000)*math.Pow(10, 6)) ||
+		accErr != nil {
+		return nil
+	}
+
+	return errors.New("You have enough tokens in your account")
+}
+
 func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	address := request.FormValue("address")
 	captchaResponse := request.FormValue("response")
@@ -129,8 +180,31 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 	fmt.Println("Captcha passed? ", captchaPassed)
 
-	// send the coins!
+	if !captchaPassed {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status: false,
+			Message: "Invalid captcha",
+		})
+		return
+	}
+
 	if captchaPassed {
+
+		//check account balance
+		err := CheckAccountBalance(address, amountFaucet, key)
+
+		if err != nil {
+			res.WriteHeader(http.StatusBadRequest)
+			json.NewEncoder(res).Encode(ErrorResponse{
+				Status:  false,
+				Message: err.Error(),
+				Error:   err,
+			})
+			return
+		}
+
+		// send the coins!
 		sendFaucet := fmt.Sprintf(
 			"akash send %v %v -k %v",
 			amountFaucet, address, key)
@@ -139,7 +213,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	}
 
 	res.WriteHeader(http.StatusOK)
-	json.NewEncoder(res).Encode(types.SuccessResponse{
+	json.NewEncoder(res).Encode(SuccessResponse{
 		Status: true,
 		Data:   address,
 	})

@@ -45,7 +45,7 @@ The following executable will run the faucet on port 8080.
 
 ### Development
 
-Run `go run faucet,.go` in the `backend` directory to serve the backend.
+Run `go run faucet.go` in the `backend` directory to serve the backend.
 
 ## Frontend Setup
 
