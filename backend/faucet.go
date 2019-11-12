@@ -140,12 +140,12 @@ func CheckAccountBalance(address string, amountFaucet string, key string) error 
 		}
 	}
 
-	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(1000)*math.Pow(10, 6)) ||
+	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(100)*math.Pow(10, 6)) ||
 		accErr != nil {
 		return nil
 	}
 
-	return errors.New("You account already have a enough tokens")
+	return errors.New("You have enough tokens in your account")
 }
 
 func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
@@ -180,10 +180,18 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 	fmt.Println("Captcha passed? ", captchaPassed)
 
-	// send the coins!
-	if captchaPassed {
-		//check account balance
+	if !captchaPassed {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status: false,
+			Message: "Invalid captcha",
+		})
+		return
+	}
 
+	if captchaPassed {
+
+		//check account balance
 		err := CheckAccountBalance(address, amountFaucet, key)
 
 		if err != nil {
@@ -196,6 +204,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 			return
 		}
 
+		// send the coins!
 		sendFaucet := fmt.Sprintf(
 			"akash send %v %v -k %v",
 			amountFaucet, address, key)
