@@ -32,7 +32,6 @@ import axios from "axios";
 import VueRecaptcha from "vue-recaptcha";
 import { mapGetters } from "vuex";
 import { required } from "vuelidate/lib/validators";
-import b32 from "../scripts/b32";
 import Btn from "@nylira/vue-button";
 import Field from "@nylira/vue-field";
 import FormGroup from "../components/NiFormGroup";
@@ -80,10 +79,15 @@ export default {
       if (this.$v.$error) return;
 
       this.sending = true;
+
+      var data = {
+        address: this.fields.address.toString(),
+        response: this.fields.response.toString()
+      };
+
       axios
-        .post(this.config.claimUrl, {
-          address: this.fields.address,
-          response: this.fields.response
+        .post(this.config.claimUrl, data, {
+          headers: { "Content-Type": "application/json" }
         })
         .then(() => {
           this.sending = false;
@@ -103,9 +107,13 @@ export default {
     },
     bech32Validate(param) {
       try {
-        b32.decode(param);
-        this.bech32error = null;
-        return true;
+        if (param.length == 40) {
+          this.bech32error = null;
+          return true;
+        } else {
+          this.bech32error = "Invalid address";
+          return false;
+        }
       } catch (error) {
         this.bech32error = error.message;
         return false;

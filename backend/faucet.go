@@ -13,7 +13,6 @@ import (
 
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
-	"github.com/tendermint/tmlibs/bech32"
 	"github.com/tomasen/realip"
 )
 
@@ -103,19 +102,28 @@ func getCoinsHandler(w http.ResponseWriter, request *http.Request) {
 	// decode JSON response from front end
 	decoder := json.NewDecoder(request.Body)
 	decoderErr := decoder.Decode(&claim)
+
 	if decoderErr != nil {
+		http.Error(w, decoderErr.Error(), http.StatusBadRequest)
+
 		panic(decoderErr)
 	}
 
-	// make sure address is bech32
-	readableAddress, decodedAddress, decodeErr := bech32.DecodeAndConvert(claim.Address)
-	if decodeErr != nil {
-		panic(decodeErr)
-	}
-	// re-encode the address in bech32
-	encodedAddress, encodeErr := bech32.ConvertAndEncode(readableAddress, decodedAddress)
-	if encodeErr != nil {
-		panic(encodeErr)
+	fmt.Println("No error", claim)
+
+	// // make sure address is bech32
+	// readableAddress, decodedAddress, decodeErr := bech32.DecodeAndConvert(claim.Address)
+	// if decodeErr != nil {
+	// 	panic(decodeErr)
+	// }
+	// // re-encode the address in bech32
+	// encodedAddress, encodeErr := bech32.ConvertAndEncode(readableAddress, decodedAddress)
+	// if encodeErr != nil {
+	// 	panic(encodeErr)
+	// }
+
+	if len(claim.Address) != 40 {
+		panic("Invalid address")
 	}
 
 	// make sure captcha is valid
@@ -126,12 +134,14 @@ func getCoinsHandler(w http.ResponseWriter, request *http.Request) {
 		panic(captchaErr)
 	}
 
+	fmt.Println("Captcha passed? ", captchaPassed)
+
 	// send the coins!
 	if captchaPassed {
 		sendFaucet := fmt.Sprintf(
 			"akash send %v %v -k %v",
-			amountFaucet, encodedAddress, key)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), encodedAddress, "[1]")
+			amountFaucet, claim.Address, key)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), claim.Address, "[1]")
 		executeCmd(sendFaucet, pass)
 	}
 
