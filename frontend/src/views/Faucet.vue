@@ -97,6 +97,7 @@ export default {
         }
       )
         .then(() => {
+          this.$refs.recaptcha.reset();
           this.sending = false;
           this.$store.commit("notify", {
             title: "Successfully Sent",
@@ -105,6 +106,7 @@ export default {
           this.resetForm();
         })
         .catch(err => {
+          this.$refs.recaptcha.reset();
           var msg = err.message;
           if (err.response && err.response.data && err.response.data.message) {
             msg = err.response.data.message;
