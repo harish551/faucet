@@ -140,7 +140,7 @@ func CheckAccountBalance(address string, amountFaucet string, key string) error 
 		}
 	}
 
-	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(100)*math.Pow(10, 6)) ||
+	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(1000)*math.Pow(10, 6)) ||
 		accErr != nil {
 		return nil
 	}
