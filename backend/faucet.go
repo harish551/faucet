@@ -14,6 +14,7 @@ import (
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
+	"gitlab.com/faucet/src/types"
 )
 
 var chain string
@@ -26,8 +27,8 @@ var node string
 var publicUrl string
 
 type claim_struct struct {
-	Address  string
-	Response string
+	Address  string `json:"address"`
+	Response string `json:"response"`
 }
 
 func getEnv(key string) string {
@@ -96,20 +97,13 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func getCoinsHandler(w http.ResponseWriter, request *http.Request) {
-	var claim claim_struct
+func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
+	address := request.FormValue("address")
+	captchaResponse := request.FormValue("response")
 
-	// decode JSON response from front end
-	decoder := json.NewDecoder(request.Body)
-	decoderErr := decoder.Decode(&claim)
+	fmt.Println("No error", address, captchaResponse)
 
-	if decoderErr != nil {
-		http.Error(w, decoderErr.Error(), http.StatusBadRequest)
-
-		panic(decoderErr)
-	}
-
-	fmt.Println("No error", claim)
+	(res).Header().Set("Access-Control-Allow-Origin", "*")
 
 	// // make sure address is bech32
 	// readableAddress, decodedAddress, decodeErr := bech32.DecodeAndConvert(claim.Address)
@@ -122,13 +116,12 @@ func getCoinsHandler(w http.ResponseWriter, request *http.Request) {
 	// 	panic(encodeErr)
 	// }
 
-	if len(claim.Address) != 40 {
+	if len(address) != 40 {
 		panic("Invalid address")
 	}
 
 	// make sure captcha is valid
 	clientIP := realip.FromRequest(request)
-	captchaResponse := claim.Response
 	captchaPassed, captchaErr := recaptcha.Confirm(clientIP, captchaResponse)
 	if captchaErr != nil {
 		panic(captchaErr)
@@ -140,10 +133,16 @@ func getCoinsHandler(w http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 		sendFaucet := fmt.Sprintf(
 			"akash send %v %v -k %v",
-			amountFaucet, claim.Address, key)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), claim.Address, "[1]")
+			amountFaucet, address, key)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
 		executeCmd(sendFaucet, pass)
 	}
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(types.SuccessResponse{
+		Status: true,
+		Data:   address,
+	})
 
 	return
 }

@@ -85,10 +85,19 @@ export default {
         response: this.fields.response.toString()
       };
 
-      axios
-        .post(this.config.claimUrl, data, {
-          headers: { "Content-Type": "application/json" }
-        })
+      var bodyFormData = new FormData();
+      bodyFormData.set("address", data.address);
+      bodyFormData.set("response", data.response);
+
+      axios(
+        // .post(this.config.claimUrl, data)
+        {
+          method: "post",
+          url: this.config.claimUrl,
+          data: bodyFormData,
+          config: { headers: { "Content-Type": "multipart/form-data" } }
+        }
+      )
         .then(() => {
           this.sending = false;
           this.$store.commit("notify", {
@@ -135,35 +144,45 @@ export default {
 </script>
 
 <style lang="stylus">
-@import '~variables'
+@import '~variables';
 
-#faucet
-  max-width 40rem
-  width 100%
-  margin 0 auto
+#faucet {
+  max-width: 40rem;
+  width: 100%;
+  margin: 0 auto;
+}
 
-.section
-  margin 0.5rem
-  padding 1rem
-  background var(--app-bg)
-  position relative
-  z-index 10
-  label
-    display none
+.section {
+  margin: 0.5rem;
+  padding: 1rem;
+  background: var(--app-bg);
+  position: relative;
+  z-index: 10;
 
-  input:-webkit-autofill
-    -webkit-text-fill-color var(--txt) !important
-    -webkit-box-shadow 0 0 0px 3rem var(--app-fg) inset
+  label {
+    display: none;
+  }
 
-  .section-main
-    padding 0 1rem
+  input:-webkit-autofill {
+    -webkit-text-fill-color: var(--txt) !important;
+    -webkit-box-shadow: 0 0 0px 3rem var(--app-fg) inset;
+  }
 
-@media screen and (min-width: 375px)
-  .section
-    padding 2rem 1rem
+  .section-main {
+    padding: 0 1rem;
+  }
+}
 
-@media screen and (min-width: 768px)
-  .section
-    padding 3rem 2rem
-    margin 1rem
+@media screen and (min-width: 375px) {
+  .section {
+    padding: 2rem 1rem;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .section {
+    padding: 3rem 2rem;
+    margin: 1rem;
+  }
+}
 </style>
