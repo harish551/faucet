@@ -15,7 +15,6 @@ import (
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
-	"math"
 )
 
 type ErrorResponse struct {
@@ -30,8 +29,31 @@ type SuccessResponse struct {
 }
 
 type AccountQueryRes struct {
-	Account_query []Account_query `json:"account_query"`
-	Raw           []Raw           `json:"raw"`
+	//emcli query struct
+	Type 		string 			`json:"type"`
+	Value 		Value 			`json:"value"`
+
+	//Faucet query struct
+	//Account_query []Account_query `json:"account_query"`
+	//Raw           []Raw           `json:"raw"`
+}
+
+type Value struct {
+	Address 		string 		`json:"address"`
+	Coins 			[]Coin 		`json:"coins"`
+	Public_key 		Public_key 	`json:"public_key"`
+	Account_number 	int64 		`json:"account_number"`
+	Sequence 		int64 		`json:"sequence"`
+}
+
+type Coin struct {
+	Denom 			string 		`json:"denom"`
+	Amount 			int64 		`json:"amount"`
+}
+
+type Public_key struct {
+	Type 		string 		`json:"type"`
+	Value 		string 		`json:"value"`
 }
 
 type Raw struct {
@@ -44,6 +66,10 @@ type Account_query struct {
 	Nonce              string `json:"nonce"`
 	Public_key_address string `json:"public_key_address"`
 }
+
+var (
+	DENOM = "x3ngm"
+)
 
 var chain string
 var recaptchaSecretKey string
@@ -125,10 +151,10 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func CheckAccountBalance(address string, amountFaucet string, key string) error {
+func CheckAccountBalance(address string, amountFaucet string, key string, chain string) error {
 	var queryRes AccountQueryRes
 
-	command := fmt.Sprintf("akash query account %s -m json", address)
+	command := fmt.Sprintf("emcli query account %s --chain-id %s -o json", address, chain)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -140,12 +166,19 @@ func CheckAccountBalance(address string, amountFaucet string, key string) error 
 		}
 	}
 
-	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(1000)*math.Pow(10, 6)) ||
-		accErr != nil {
-		return nil
+	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
+		for _, coin := range queryRes.Value.Coins {
+			if coin.Denom == DENOM {
+				if coin.Amount < 1000 {
+					return  nil
+				} else {
+					return errors.New("You have enough tokens in your account")
+				}
+			}
+		}
 	}
 
-	return errors.New("You have enough tokens in your account")
+	return nil
 }
 
 func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
@@ -167,7 +200,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	// 	panic(encodeErr)
 	// }
 
-	if len(address) != 40 {
+	if len(address) != 45 {
 		panic("Invalid address")
 	}
 
@@ -192,7 +225,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 
 		//check account balance
-		err := CheckAccountBalance(address, amountFaucet, key)
+		err := CheckAccountBalance(address, amountFaucet, key, chain)
 
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
@@ -206,8 +239,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// send the coins!
 		sendFaucet := fmt.Sprintf(
-			"akash send %v %v -k %v",
-			amountFaucet, address, key)
+			"emcli tx send %v %v %v --chain-id %v",
+			key, address, amountFaucet, chain)
 		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
 		executeCmd(sendFaucet, pass)
 	}
