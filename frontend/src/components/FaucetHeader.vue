@@ -1,6 +1,9 @@
 <template lang="pug">
 .section-header
-  h1 Akash Testnet Faucet
+  div
+    img(src="https://e-money.com/images/logo/Logo_White_Name3.png")
+  br
+  h1 {{config.chain}} testnet faucet
   p Hello !!! Use this faucet to get test tokens for the #[span.chain {{ config.chain }}] testnet. Please don't abuse this service&mdash;the number of available tokens is limited.
 </template>
 

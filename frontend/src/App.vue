@@ -2,7 +2,7 @@
 #app
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom Akash Network
+  #bottom E-Money
 </template>
 
 
@@ -28,9 +28,7 @@ export default {
 @import '~variables'
 
 img
-  position absolute
-  top -7rem
-  left -7rem
+  text-align center
   z-index 1
 
 .top-bar
