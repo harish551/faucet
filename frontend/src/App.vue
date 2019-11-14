@@ -2,7 +2,7 @@
 #app
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom E-Money
+  #bottom Regen network
 </template>
 
 
