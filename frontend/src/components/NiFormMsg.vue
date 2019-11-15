@@ -1,5 +1,5 @@
-<template lang='pug'>
-div(:class='cssClass')
+<template lang="pug">
+div(:class="cssClass")
   template(v-if='name') {{ name }} {{ error }}
   slot(v-else='')
 </template>

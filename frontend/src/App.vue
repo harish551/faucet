@@ -2,9 +2,8 @@
 #app
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom E-Money
+  #bottom Powered by #[a(href="https://vitwit.com") Vitwit]
 </template>
-
 
 <script>
 import { mapGetters } from "vuex";

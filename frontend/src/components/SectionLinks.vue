@@ -4,25 +4,25 @@
     h1 Community Links
   .section-main
     list-item(
-      href="https://e-money.network/"
-      target="_blank"
-      title="Explorer"
-      subtitle="#explorer")
-    list-item(
-      href="https://t.me/emoney_com"
-      target="_blank"
-      title="Telegram"
-      subtitle="#emoney_com")
-    list-item(
-      href="https://github.com/e-money"
-      target="_blank"
-      title="Source Code"
-      subtitle="e-money")
-    list-item(
-      href="https://e-money.com/"
+      href="https://vitwit.com/"
       target="_blank"
       title="Website"
-      subtitle="e-money.com")
+      subtitle="#vitwit.com")
+    list-item(
+      href="https://twitter.com/vitwit_india"
+      target="_blank"
+      title="Twitter"
+      subtitle="#vitwit_india")
+    list-item(
+      href="https://github.com/vitwit"
+      target="_blank"
+      title="Github"
+      subtitle="#vitwit")
+    list-item(
+      href="https://medium.com/vitwit"
+      target="_blank"
+      title="Medium"
+      subtitle="#vitwit")
 </template>
 
 <script>

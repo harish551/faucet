@@ -1,10 +1,10 @@
 <template lang="pug">
 .section-header
   div
-    img(src="https://e-money.com/images/logo/Logo_White_Name3.png")
+    img(style="width:200px", src="https://vitwit.com/assets/img/white-logo.png")
   br
-  h1 {{config.chain}} testnet faucet
-  p Hello !!! Use this faucet to get test tokens for the #[span.chain {{ config.chain }}] testnet. Please don't abuse this service&mdash;the number of available tokens is limited.
+  h1 IBC testnets faucet
+  p Hello Techies!!! Use this faucet to get test tokens for the listed IBC testnets. Please don't abuse this service&mdash;the number of available tokens is limited.
 </template>
 
 <script>

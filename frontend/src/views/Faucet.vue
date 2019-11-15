@@ -11,6 +11,11 @@
           @expired="onExpired"
           :sitekey="config.recaptchaSiteKey")
         form-msg(name='Captcha' type='required' v-if='!$v.fields.response.required')
+      form-group(field-id='faucet-token' field-label='Select Token')
+        select.custom-select(v-model='selected' :options="options")
+          option(value="") Select Token
+          option(v-for="option in options" v-bind:value="option.value") {{option.text}}
+      
       form-group(:error='$v.fields.address.$error'
         field-id='faucet-address' field-label='Send To')
         field#faucet-address(
@@ -55,14 +60,22 @@ export default {
   data: () => ({
     fields: {
       response: "",
-      address: ""
+      address: "",
+      token: ""
     },
+    selected: "",
+    options: [
+      { text: "One", value: "A" },
+      { text: "Two", value: "B" },
+      { text: "Three", value: "C" }
+    ],
     sending: false
   }),
   methods: {
     resetForm() {
       this.fields.address = "";
       this.fields.response = "";
+      this.fields.token = "";
       this.$refs.recaptcha.reset();
       this.$v.$reset();
     },
@@ -80,7 +93,8 @@ export default {
 
       var data = {
         address: this.fields.address.toString(),
-        response: this.fields.response.toString()
+        response: this.fields.response.toString(),
+        token: this.fields.token.toString()
       };
 
       var bodyFormData = new FormData();
@@ -155,6 +169,18 @@ export default {
   max-width: 60rem;
   width: 100%;
   margin: 0 auto;
+}
+
+.custom-select {
+    position: relative;
+    font-family: Arial;
+    min-width: 300px;
+    /* min-height: 50px; */
+    border-radius: 2px !important;
+    height: 3rem;
+    font-size: 1.125rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
 }
 
 .section {
