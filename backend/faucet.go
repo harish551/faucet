@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
 	"errors"
+
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
@@ -243,7 +243,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// send the coins!
 		sendFaucet := fmt.Sprintf(
-			"emcli tx send %v %v %v --chain-id %v --node %v",
+			"emcli tx send %v %v %v --chain-id %v --node %v -f",
 			key, address, amountFaucet, chain, node)
 		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet, ":send command")
 		executeCmd(sendFaucet, pass)
