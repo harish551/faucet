@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	"errors"
+	"strconv"
 
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
@@ -173,9 +174,11 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
 		for _, coin := range queryRes.Value.Coins {
 			if coin.Denom == DENOM {
-				fmt.Println("coin.Amount:::", coin.Amount)
-				
-				if coin.Amount == "" && strconv.ParseInt(coin.Amount) > 1000 {
+				blnc, err := strconv.ParseInt(coin.Amount, 10, 64)
+
+				fmt.Println("Amount:", blnc, err)
+
+				if blnc >= 1000 {
 					return  nil
 				} else {
 					return errors.New("You have enough tokens in your account")
