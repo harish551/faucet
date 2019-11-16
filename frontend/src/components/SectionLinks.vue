@@ -1,7 +1,7 @@
 <template lang="pug">
 .section
   .section-header
-    h1 Community Links
+    h1 Contact Us
   .section-main
     list-item(
       href="https://vitwit.com/"
