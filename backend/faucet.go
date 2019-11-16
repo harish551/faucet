@@ -248,7 +248,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// send the coins!
 		sendFaucet := fmt.Sprintf(
-			"gaiacli tx send %v %v %v --chain-id %v --node %v",
+			"gaiacli tx send %v %v %v --chain-id %v --node %v -y",
 			key, address, amountFaucet, chain, node)
 		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet, " -- send cmd")
 		executeCmd(sendFaucet, pass)
