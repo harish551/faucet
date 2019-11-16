@@ -11,17 +11,18 @@
           @expired="onExpired"
           :sitekey="config.recaptchaSiteKey")
         form-msg(name='Captcha' type='required' v-if='!$v.fields.response.required')
-      form-group(field-id='faucet-token' field-label='Select Token')
-        select.custom-select(v-model='selected' :options="options")
-          option(value="") Select Token
+      form-group(:error='$v.fields.selectedChain.$error' field-id='faucet-chain' field-label='Select Chain')
+        select.custom-select(v-model='fields.selectedChain' :options="options")
+          option(value="") Select Chain
           option(v-for="option in options" v-bind:value="option.value") {{option.text}}
+        form-msg(name='Chain ' type='required' v-if='!$v.fields.selectedChain.required')
       
       form-group(:error='$v.fields.address.$error'
         field-id='faucet-address' field-label='Send To')
         field#faucet-address(
           type='text'
           v-model='fields.address'
-          placeholder='Testnet address'
+          placeholder='Your account address'
           size="lg")
         form-msg(name='Address' type='required' v-if='!$v.fields.address.required')
         form-msg(name='Address' type='bech32' :body="bech32error" v-else-if='!$v.fields.address.bech32Validate')
@@ -61,13 +62,17 @@ export default {
     fields: {
       response: "",
       address: "",
-      token: ""
+      selectedChain: ""
     },
-    selected: "",
+    selectedChain: "",
     options: [
-      { text: "One", value: "A" },
-      { text: "Two", value: "B" },
-      { text: "Three", value: "C" }
+      { text: "testnetibc0 (stake)", value: "testnetibc0" },
+      { text: "testnetibc1 (stake)", value: "testnetibc1" },
+      { text: "vitwit (stake)", value: "vitwit" },
+      { text: "vitwitibc2 (stake)", value: "vitwitibc2" },
+      { text: "dokia-bombers (stake)", value: "dokia-bombers" },
+      { text: "chainl1 (stake)", value: "chainl1" },
+      { text: "ibc-corestart (stake)", value: "ibc-corestart" }
     ],
     sending: false
   }),
@@ -75,7 +80,7 @@ export default {
     resetForm() {
       this.fields.address = "";
       this.fields.response = "";
-      this.fields.token = "";
+      this.fields.selectedChain = "";
       this.$refs.recaptcha.reset();
       this.$v.$reset();
     },
@@ -94,12 +99,13 @@ export default {
       var data = {
         address: this.fields.address.toString(),
         response: this.fields.response.toString(),
-        token: this.fields.token.toString()
+        selectedChain: this.fields.selectedChain.toString()
       };
 
       var bodyFormData = new FormData();
       bodyFormData.set("address", data.address);
       bodyFormData.set("response", data.response);
+      bodyFormData.set("chain", data.selectedChain);
 
       axios(
         // .post(this.config.claimUrl, data)
@@ -155,6 +161,7 @@ export default {
           required,
           bech32Validate: this.bech32Validate
         },
+        selectedChain: { required },
         response: { required }
       }
     };

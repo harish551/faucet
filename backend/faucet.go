@@ -10,8 +10,8 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-
 	"errors"
+
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
@@ -71,7 +71,6 @@ var (
 	DENOM = "x3ngm"
 )
 
-var chain string
 var recaptchaSecretKey string
 var amountFaucet string
 var amountSteak string
@@ -101,13 +100,11 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	chain = getEnv("FAUCET_CHAIN")
 	recaptchaSecretKey = getEnv("FAUCET_RECAPTCHA_SECRET_KEY")
 	amountFaucet = getEnv("FAUCET_AMOUNT_FAUCET")
 	amountSteak = getEnv("FAUCET_AMOUNT_STEAK")
 	key = getEnv("FAUCET_KEY")
 	pass = getEnv("FAUCET_PASS")
-	node = getEnv("FAUCET_NODE")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
 
 	recaptcha.Init(recaptchaSecretKey)
@@ -184,21 +181,14 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	address := request.FormValue("address")
 	captchaResponse := request.FormValue("response")
+	chain := request.FormValue("chain")
+
+	// TODO: Loop over nodes to get chain rpc
+	node := "http://34.82.17.52:26657"
 
 	fmt.Println("No error", address, captchaResponse)
 
 	(res).Header().Set("Access-Control-Allow-Origin", "*")
-
-	// // make sure address is bech32
-	// readableAddress, decodedAddress, decodeErr := bech32.DecodeAndConvert(claim.Address)
-	// if decodeErr != nil {
-	// 	panic(decodeErr)
-	// }
-	// // re-encode the address in bech32
-	// encodedAddress, encodeErr := bech32.ConvertAndEncode(readableAddress, decodedAddress)
-	// if encodeErr != nil {
-	// 	panic(encodeErr)
-	// }
 
 	if len(address) != 45 {
 		panic("Invalid address")
@@ -239,8 +229,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// send the coins!
 		sendFaucet := fmt.Sprintf(
-			"emcli tx send %v %v %v --chain-id %v",
-			key, address, amountFaucet, chain)
+			"gaiacli tx send %v %v %v --chain-id %v --node %v",
+			key, address, amountFaucet, chain, node)
 		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
 		executeCmd(sendFaucet, pass)
 	}
