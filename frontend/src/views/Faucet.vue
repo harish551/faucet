@@ -29,6 +29,11 @@
       form-group
         btn(v-if='sending' value='Sending...' disabled color="primary" size="lg")
         btn(v-else @click='onSubmit' value="Send me tokens" color="primary" size="lg" icon="send")
+      br
+      form-group.section-header
+        h5 Can't find your chain? 
+        p Fill our faucet wallet with the tokens and inform in #[a(href="https://t.me/joinchat/IYdbxRRFYIkj9FR99X3-BA" target="_blank") ibc-testnet-alpha]. We'll list your chain. 
+        p Our faucet address: <strong>cosmos1h0jq5kn6hduspullp2dqegg7r9dmj0hwnjgtzk</strong>
   section-links
 </template>
 

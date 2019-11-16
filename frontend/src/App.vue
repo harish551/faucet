@@ -2,7 +2,7 @@
 #app
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom Powered by #[a(href="https://vitwit.com") Vitwit]
+  #bottom Powered by #[a(href="https://vitwit.com" target="_blank") Vitwit]
 </template>
 
 <script>
