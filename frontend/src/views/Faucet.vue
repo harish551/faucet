@@ -141,7 +141,7 @@ export default {
     },
     bech32Validate(param) {
       try {
-        if (param.length == 45 && param.startsWith("emoney")) {
+        if (param.length == 45 && param.startsWith("cosmos")) {
           this.bech32error = null;
           return true;
         } else {
