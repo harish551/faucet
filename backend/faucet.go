@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 	"errors"
+	"strconv"
 
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
@@ -42,13 +43,13 @@ type Value struct {
 	Address 		string 		`json:"address"`
 	Coins 			[]Coin 		`json:"coins"`
 	Public_key 		Public_key 	`json:"public_key"`
-	Account_number 	int64 		`json:"account_number"`
-	Sequence 		int64 		`json:"sequence"`
+	Account_number 	string 		`json:"account_number"`
+	Sequence 		string 		`json:"sequence"`
 }
 
 type Coin struct {
 	Denom 			string 		`json:"denom"`
-	Amount 			int64 		`json:"amount"`
+	Amount 			string 		`json:"amount"`
 }
 
 type Public_key struct {
@@ -174,7 +175,11 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
 		for _, coin := range queryRes.Value.Coins {
 			if coin.Denom == DENOM {
-				if coin.Amount < 1000 {
+				blnc, err := strconv.ParseInt(coin.Amount, 10, 64)
+
+				fmt.Println("Amount:", blnc, err)
+
+				if blnc < 1000 {
 					return  nil
 				} else {
 					return errors.New("You have enough tokens in your account")
