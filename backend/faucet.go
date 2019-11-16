@@ -78,6 +78,7 @@ var key string
 var pass string
 var node string
 var publicUrl string
+var nodes map[string]string
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -97,7 +98,7 @@ func getEnv(key string) string {
 func main() {
 	err := godotenv.Load(".env.local", ".env")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env file %v", err)
 	}
 
 	recaptchaSecretKey = getEnv("FAUCET_RECAPTCHA_SECRET_KEY")
@@ -106,6 +107,13 @@ func main() {
 	key = getEnv("FAUCET_KEY")
 	pass = getEnv("FAUCET_PASS")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
+
+	node := getEnv("FAUCET_NODE")
+
+	err1 := json.Unmarshal([]byte(node), &nodes)
+	if err1 != nil {
+		log.Fatalln("failed unmarshalling nodes %v", err1)
+	}
 
 	recaptcha.Init(recaptchaSecretKey)
 
@@ -183,8 +191,19 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	captchaResponse := request.FormValue("response")
 	chain := request.FormValue("chain")
 
-	// TODO: Loop over nodes to get chain rpc
-	node := "http://34.82.17.52:26657"
+	node = nodes[chain]
+
+	if node == "" {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status: false,
+			Message: "chain info not available, please try another chain",
+		})
+		return
+	}
+
+	//// TODO: Loop over nodes to get chain rpc
+	//node := "http://34.82.17.52:26657"
 
 	fmt.Println("No error", address, captchaResponse)
 
