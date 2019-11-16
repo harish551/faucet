@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -10,7 +11,6 @@ import (
 	"os/exec"
 	"strings"
 	"time"
-	"errors"
 
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
@@ -30,8 +30,8 @@ type SuccessResponse struct {
 
 type AccountQueryRes struct {
 	//emcli query struct
-	Type 		string 			`json:"type"`
-	Value 		Value 			`json:"value"`
+	Type  string `json:"type"`
+	Value Value  `json:"value"`
 
 	//Faucet query struct
 	//Account_query []Account_query `json:"account_query"`
@@ -39,21 +39,21 @@ type AccountQueryRes struct {
 }
 
 type Value struct {
-	Address 		string 		`json:"address"`
-	Coins 			[]Coin 		`json:"coins"`
-	Public_key 		Public_key 	`json:"public_key"`
-	Account_number 	int64 		`json:"account_number"`
-	Sequence 		int64 		`json:"sequence"`
+	Address        string     `json:"address"`
+	Coins          []Coin     `json:"coins"`
+	Public_key     Public_key `json:"public_key"`
+	Account_number int64      `json:"account_number"`
+	Sequence       int64      `json:"sequence"`
 }
 
 type Coin struct {
-	Denom 			string 		`json:"denom"`
-	Amount 			int64 		`json:"amount"`
+	Denom  string `json:"denom"`
+	Amount int64  `json:"amount"`
 }
 
 type Public_key struct {
-	Type 		string 		`json:"type"`
-	Value 		string 		`json:"value"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
 }
 
 type Raw struct {
@@ -79,6 +79,7 @@ var pass string
 var node string
 var publicUrl string
 var nodes map[string]string
+var faucetAddress string
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -107,6 +108,7 @@ func main() {
 	key = getEnv("FAUCET_KEY")
 	pass = getEnv("FAUCET_PASS")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
+	faucetAddress = getEnv("FAUCET_ADDRESS")
 
 	node := getEnv("FAUCET_NODE")
 
@@ -171,13 +173,46 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 		}
 	}
 
-	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
+	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins) > 0 {
 		for _, coin := range queryRes.Value.Coins {
 			if coin.Denom == DENOM {
 				if coin.Amount < 1000 {
-					return  nil
+					return nil
 				} else {
 					return errors.New("You have enough tokens in your account")
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func checkChainBalnce(address string, key string, chain string, node string) error {
+	var queryRes AccountQueryRes
+
+	command := fmt.Sprintf("gaiacli query account %s --chain-id %s --node %s -o json", address, chain, node)
+	fmt.Println(" command ", command)
+
+	out, accErr := exec.Command("bash", "-c", command).Output()
+
+	if accErr != nil {
+		fmt.Printf("Error while exectuing query account cmd %v", accErr)
+		return errors.New("Error while getting chain info")
+	}
+
+	if err := json.Unmarshal(out, &queryRes); err != nil {
+		fmt.Printf("Error unmarshalling command line output %v", err)
+		return err
+	}
+
+	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins) > 0 {
+		for _, coin := range queryRes.Value.Coins {
+			if coin.Denom == DENOM {
+				if coin.Amount <= 0 {
+					return errors.New("Faucet doesn't have enough balance on this chain")
+				} else {
+					return nil
 				}
 			}
 		}
@@ -196,8 +231,19 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if node == "" {
 		res.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(res).Encode(ErrorResponse{
-			Status: false,
+			Status:  false,
 			Message: "chain info not available, please try another chain",
+		})
+		return
+	}
+
+	err := checkChainBalnce(faucetAddress, key, chain, node)
+
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:  false,
+			Message: err.Error(),
 		})
 		return
 	}
@@ -225,7 +271,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if !captchaPassed {
 		res.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(res).Encode(ErrorResponse{
-			Status: false,
+			Status:  false,
 			Message: "Invalid captcha",
 		})
 		return
