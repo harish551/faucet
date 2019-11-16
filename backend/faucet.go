@@ -148,10 +148,10 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func CheckAccountBalance(address string, amountFaucet string, key string, chain string) error {
+func CheckAccountBalance(address string, amountFaucet string, key string, chain string, node string) error {
 	var queryRes AccountQueryRes
 
-	command := fmt.Sprintf("emcli query account %s --chain-id %s -o json", address, chain)
+	command := fmt.Sprintf("gaiacli query account %s --chain-id %s --node %s -o json", address, chain, node)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -215,7 +215,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 
 		//check account balance
-		err := CheckAccountBalance(address, amountFaucet, key, chain)
+		err := CheckAccountBalance(address, amountFaucet, key, chain, node)
 
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
