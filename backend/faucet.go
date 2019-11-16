@@ -173,7 +173,9 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
 		for _, coin := range queryRes.Value.Coins {
 			if coin.Denom == DENOM {
-				if coin.Amount < 1000 {
+				fmt.Println("coin.Amount:::", coin.Amount)
+				
+				if coin.Amount == "" {
 					return  nil
 				} else {
 					return errors.New("You have enough tokens in your account")
