@@ -42,8 +42,8 @@ type Value struct {
 	Address 		string 		`json:"address"`
 	Coins 			[]Coin 		`json:"coins"`
 	Public_key 		Public_key 	`json:"public_key"`
-	Account_number 	int64 		`json:"account_number"`
-	Sequence 		int64 		`json:"sequence"`
+	Account_number 	string 		`json:"account_number"`
+	Sequence 		string 		`json:"sequence"`
 }
 
 type Coin struct {
@@ -175,7 +175,7 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 			if coin.Denom == DENOM {
 				fmt.Println("coin.Amount:::", coin.Amount)
 				
-				if coin.Amount == "" {
+				if coin.Amount == "" && strconv.ParseInt(coin.Amount) > 1000 {
 					return  nil
 				} else {
 					return errors.New("You have enough tokens in your account")
