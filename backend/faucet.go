@@ -48,7 +48,7 @@ type Value struct {
 
 type Coin struct {
 	Denom 			string 		`json:"denom"`
-	Amount 			int64 		`json:"amount"`
+	Amount 			string 		`json:"amount"`
 }
 
 type Public_key struct {
