@@ -205,7 +205,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	//// TODO: Loop over nodes to get chain rpc
 	//node := "http://34.82.17.52:26657"
 
-	fmt.Println("No error", address, captchaResponse)
+	fmt.Println("No error", address, chain, node, captchaResponse)
 
 	(res).Header().Set("Access-Control-Allow-Origin", "*")
 
@@ -250,7 +250,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		sendFaucet := fmt.Sprintf(
 			"gaiacli tx send %v %v %v --chain-id %v --node %v",
 			key, address, amountFaucet, chain, node)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet, " -- send cmd")
 		executeCmd(sendFaucet, pass)
 	}
 
