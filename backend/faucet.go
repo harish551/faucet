@@ -178,7 +178,7 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 
 				fmt.Println("Amount:", blnc, err)
 
-				if blnc >= 1000 {
+				if blnc < 1000 {
 					return  nil
 				} else {
 					return errors.New("You have enough tokens in your account")
