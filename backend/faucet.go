@@ -125,6 +125,9 @@ func executeCmd(command string, writes ...string) {
 	for _, write := range writes {
 		wc.Write([]byte(write + "\n"))
 	}
+	
+	fmt.Println("Sending tokens: ", wc)
+
 	cmd.Wait()
 }
 
@@ -134,6 +137,7 @@ func goExecute(command string) (cmd *exec.Cmd, pipeIn io.WriteCloser, pipeOut io
 	pipeOut, _ = cmd.StdoutPipe()
 	go cmd.Start()
 	time.Sleep(time.Second)
+
 	return cmd, pipeIn, pipeOut
 }
 
@@ -154,7 +158,7 @@ func getCmd(command string) *exec.Cmd {
 func CheckAccountBalance(address string, amountFaucet string, key string, chain string) error {
 	var queryRes AccountQueryRes
 
-	command := fmt.Sprintf("emcli query account %s --chain-id %s -o json", address, chain)
+	command := fmt.Sprintf("emcli query account %s --chain-id %s --node %s -o json", address, chain,node)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -239,9 +243,9 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// send the coins!
 		sendFaucet := fmt.Sprintf(
-			"emcli tx send %v %v %v --chain-id %v",
-			key, address, amountFaucet, chain)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
+			"emcli tx send %v %v %v --chain-id %v --node %v",
+			key, address, amountFaucet, chain, node)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet, ":send command")
 		executeCmd(sendFaucet, pass)
 	}
 
