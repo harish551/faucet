@@ -16,6 +16,13 @@ import (
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
+	"github.com/gorilla/mux"
+	"github.com/kataras/golog"
+	"gopkg.in/mgo.v2/bson"
+	"github.com/vitwit/faucet/backend/types"
+	"github.com/vitwit/faucet/backend/db"
+	"gopkg.in/mgo.v2"
+	"github.com/rs/cors"
 )
 
 type ErrorResponse struct {
@@ -118,11 +125,26 @@ func main() {
 
 	recaptcha.Init(recaptchaSecretKey)
 
-	http.HandleFunc("/claim", getCoinsHandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/claim", getCoinsHandler)
+	r.HandleFunc("/transactions", AddTransactions).Methods(http.MethodPost)
+	r.HandleFunc("/transactions", GetTransactions).Methods(http.MethodGet)
 
-	if err := http.ListenAndServe(publicUrl, nil); err != nil {
-		log.Fatal("failed to start server", err)
-	}
+	methods := []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodOptions, http.MethodPut}
+	origins := []string{"*"}
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   origins,
+		AllowedMethods:   methods,
+		AllowCredentials: true,
+		MaxAge: 1000,
+		AllowedHeaders: []string{"*"},
+	})
+
+	log.Fatal(http.ListenAndServe(":5000", c.Handler(r)))
+	//if err := http.ListenAndServe(publicUrl, nil); err != nil {
+	//	log.Fatal("failed to start server", err)
+	//}
 }
 
 func executeCmd(command string, writes ...string) {
@@ -266,4 +288,127 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	})
 
 	return
+}
+
+func AddTransactions(res http.ResponseWriter, req *http.Request)  {
+	var body types.Transactions
+	res.Header().Set("Content-Type", "application/json")
+
+	err := json.NewDecoder(req.Body).Decode(&body)
+	if err != nil {
+		golog.Error("Error while decoding req body ", err)
+
+		res.WriteHeader(http.StatusUnprocessableEntity)
+		_ = json.NewEncoder(res).Encode(types.ErrorResponse{
+			Status:  false,
+			Message: "Error while reading req body",
+			Error:   err,
+		})
+		return
+	}
+
+	txData := types.Transactions{
+		Id:     bson.NewObjectId(),
+		Type:   body.Type,
+		From:   body.From,
+		To:     body.To,
+		Amount: body.Amount,
+		Denom:  body.Denom,
+		Channel1: body.Channel1,
+		Channel2: body.Channel2,
+		Client1: body.Client1,
+		Client2: body.Client2,
+		Connection1: body.Connection1,
+		Connection2: body.Connection2,
+		FromChain: body.FromChain,
+		FromNode: body.FromNode,
+		ToChain: body.ToChain,
+		ToNode:body.ToNode,
+		Transfer: types.TxnRes{
+			Success:   body.Transfer.Success,
+			Message:   body.Transfer.Message,
+			TxHash:    body.Transfer.TxHash,
+			Height:    body.Transfer.Height,
+			Timestamp: body.Transfer.Timestamp,
+		},
+		Receive: types.TxnRes{
+			Success:   body.Receive.Success,
+			Message:   body.Receive.Message,
+			TxHash:    body.Receive.TxHash,
+			Height:    body.Receive.Height,
+			Timestamp: body.Receive.Timestamp,
+		},
+	}
+
+	err = db.AddTransaction(txData)
+	if err != nil {
+		msg := "Error while inserting data into DB "
+		golog.Error(msg, err)
+
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(types.ErrorResponse{
+			Status:  false,
+			Message: msg,
+			Error:   err,
+		})
+	}
+
+	res.WriteHeader(http.StatusCreated)
+	json.NewEncoder(res).Encode(types.SuccessResponse{
+		Status:  true,
+		Message: "Transaction details added successfully",
+	})
+}
+
+func GetTransactions(res http.ResponseWriter, req *http.Request)  {
+	res.Header().Set("Content-Type", "application/json")
+	var query = bson.M{}
+	params := req.URL.Query()
+
+	if params.Get("from") != "" {
+		query["from"] = params.Get("from")
+	}
+
+	if params.Get("to") != "" {
+		query["to"] = params.Get("to")
+	}
+
+	if params.Get("txhash") != "" {
+		query["$or"] = []bson.M{
+			{
+				"transfer.txHash": params.Get("txhash"),
+			},
+			{
+				"receive.txHash": params.Get("txhash"),
+			},
+		}
+	}
+
+	txns, err := db.GetTransactions(query)
+	if err != nil {
+		msg := "Error while fetching transaction details"
+
+		if err.Error() == mgo.ErrNotFound.Error() {
+			res.WriteHeader(http.StatusNotFound)
+			json.NewEncoder(res).Encode(types.ErrorResponse{
+				Status:  false,
+				Message: msg,
+				Error:   err.Error(),
+			})
+		}
+
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(types.ErrorResponse{
+			Status:  false,
+			Message: msg,
+			Error:   err,
+		})
+	}
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(types.SuccessResponse{
+		Status:  true,
+		Message: "request processed successfully",
+		Data:    txns,
+	})
 }
