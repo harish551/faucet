@@ -22,6 +22,7 @@ import (
 	"github.com/vitwit/faucet/backend/types"
 	"github.com/vitwit/faucet/backend/db"
 	"gopkg.in/mgo.v2"
+	"github.com/rs/cors"
 )
 
 type ErrorResponse struct {
@@ -124,15 +125,26 @@ func main() {
 
 	recaptcha.Init(recaptchaSecretKey)
 
-	http.HandleFunc("/claim", getCoinsHandler)
-
 	r := mux.NewRouter()
+	r.HandleFunc("/claim", getCoinsHandler)
 	r.HandleFunc("/transactions", AddTransactions).Methods(http.MethodPost)
 	r.HandleFunc("/transactions", GetTransactions).Methods(http.MethodGet)
 
-	if err := http.ListenAndServe(publicUrl, nil); err != nil {
-		log.Fatal("failed to start server", err)
-	}
+	methods := []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodOptions, http.MethodPut}
+	origins := []string{"*"}
+
+	c := cors.New(cors.Options{
+		AllowedOrigins:   origins,
+		AllowedMethods:   methods,
+		AllowCredentials: true,
+		MaxAge: 1000,
+		AllowedHeaders: []string{"*"},
+	})
+
+	log.Fatal(http.ListenAndServe(":5000", c.Handler(r)))
+	//if err := http.ListenAndServe(publicUrl, nil); err != nil {
+	//	log.Fatal("failed to start server", err)
+	//}
 }
 
 func executeCmd(command string, writes ...string) {
