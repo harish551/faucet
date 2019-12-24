@@ -125,6 +125,8 @@ func main() {
 
 	recaptcha.Init(recaptchaSecretKey)
 
+	db.InitDB()
+
 	r := mux.NewRouter()
 	r.HandleFunc("/claim", getCoinsHandler)
 	r.HandleFunc("/transactions", AddTransactions).Methods(http.MethodPost)
