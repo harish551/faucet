@@ -16,7 +16,7 @@ func AddTransaction(txns types.Transactions) error {
 func GetTransactions(query bson.M) ([]types.Transactions, error) {
 	var txns []types.Transactions
 	TxCollection := MongoSession.DB(DB_NAME).C(TxnCollection)
-	err := TxCollection.Find(query).All(&txns)
+	err := TxCollection.Find(query).Sort("-receive.timestamp").All(&txns)
 	if err != nil {
 		golog.Error("Error while fetching transactions ", err)
 		return txns, err
