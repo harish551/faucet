@@ -375,6 +375,17 @@ func GetTransactions(res http.ResponseWriter, req *http.Request)  {
 		query["to"] = params.Get("to")
 	}
 
+	if params.Get("address") != "" {
+		query["$or"] = []bson.M{
+			{
+				"from": params.Get("address"),
+			},
+			{
+				"to": params.Get("address"),
+			},
+		}
+	}
+
 	if params.Get("txhash") != "" {
 		query["$or"] = []bson.M{
 			{
