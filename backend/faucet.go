@@ -38,8 +38,8 @@ type SuccessResponse struct {
 
 type AccountQueryRes struct {
 	//emcli query struct
-	Type 		string 			`json:"type"`
-	Value 		Value 			`json:"value"`
+	Type  string `json:"type"`
+	Value Value  `json:"value"`
 
 	//Faucet query struct
 	//Account_query []Account_query `json:"account_query"`
@@ -47,21 +47,21 @@ type AccountQueryRes struct {
 }
 
 type Value struct {
-	Address 		string 		`json:"address"`
-	Coins 			[]Coin 		`json:"coins"`
-	Public_key 		Public_key 	`json:"public_key"`
-	Account_number 	string 		`json:"account_number"`
-	Sequence 		string 		`json:"sequence"`
+	Address        string     `json:"address"`
+	Coins          []Coin     `json:"coins"`
+	Public_key     Public_key `json:"public_key"`
+	Account_number string     `json:"account_number"`
+	Sequence       string     `json:"sequence"`
 }
 
 type Coin struct {
-	Denom 			string 		`json:"denom"`
-	Amount 			string 		`json:"amount"`
+	Denom  string `json:"denom"`
+	Amount string `json:"amount"`
 }
 
 type Public_key struct {
-	Type 		string 		`json:"type"`
-	Value 		string 		`json:"value"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
 }
 
 type Raw struct {
@@ -129,6 +129,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/claim", getCoinsHandler)
+	r.HandleFunc("/claim/tokens", getCoins)
 	r.HandleFunc("/transactions", AddTransactions).Methods(http.MethodPost)
 	r.HandleFunc("/transactions", GetTransactions).Methods(http.MethodGet)
 
@@ -139,8 +140,8 @@ func main() {
 		AllowedOrigins:   origins,
 		AllowedMethods:   methods,
 		AllowCredentials: true,
-		MaxAge: 1000,
-		AllowedHeaders: []string{"*"},
+		MaxAge:           1000,
+		AllowedHeaders:   []string{"*"},
 	})
 
 	log.Fatal(http.ListenAndServe(":5000", c.Handler(r)))
@@ -196,7 +197,7 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 		}
 	}
 
-	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
+	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins) > 0 {
 		for _, coin := range queryRes.Value.Coins {
 			if coin.Denom == DENOM {
 				blnc, err := strconv.ParseInt(coin.Amount, 10, 64)
@@ -204,7 +205,7 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 				fmt.Println("Amount:", blnc, err)
 
 				if blnc < 1000 {
-					return  nil
+					return nil
 				} else {
 					return errors.New("You have enough tokens in your account")
 				}
@@ -213,6 +214,59 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 	}
 
 	return nil
+}
+
+func getCoins(res http.ResponseWriter, req *http.Request) {
+	address := req.FormValue("address")
+	chain := req.FormValue("chain")
+
+	node = nodes[chain]
+
+	if node == "" {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:  false,
+			Message: "chain info not available, please try another chain",
+		})
+		return
+	}
+
+	//// TODO: Loop over nodes to get chain rpc
+	//node := "http://34.82.17.52:26657"
+
+	(res).Header().Set("Access-Control-Allow-Origin", "*")
+
+	if len(address) != 45 {
+		panic("Invalid address")
+	}
+
+	//check account balance
+	err := CheckAccountBalance(address, amountFaucet, key, chain, node)
+
+	if err != nil {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:  false,
+			Message: err.Error(),
+			Error:   err,
+		})
+		return
+	}
+
+	// send the coins!
+	sendFaucet := fmt.Sprintf(
+		"gaiacli tx send %v %v %v --chain-id %v --node %v -y",
+		key, address, amountFaucet, chain, node)
+	fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet, " -- send cmd")
+	executeCmd(sendFaucet, pass)
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(SuccessResponse{
+		Status: true,
+		Data:   address,
+	})
+
+	return
 }
 
 func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
@@ -225,7 +279,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if node == "" {
 		res.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(res).Encode(ErrorResponse{
-			Status: false,
+			Status:  false,
 			Message: "chain info not available, please try another chain",
 		})
 		return
@@ -254,7 +308,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if !captchaPassed {
 		res.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(res).Encode(ErrorResponse{
-			Status: false,
+			Status:  false,
 			Message: "Invalid captcha",
 		})
 		return
@@ -292,7 +346,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	return
 }
 
-func AddTransactions(res http.ResponseWriter, req *http.Request)  {
+func AddTransactions(res http.ResponseWriter, req *http.Request) {
 	var body types.Transactions
 	res.Header().Set("Content-Type", "application/json")
 
@@ -310,22 +364,22 @@ func AddTransactions(res http.ResponseWriter, req *http.Request)  {
 	}
 
 	txData := types.Transactions{
-		Id:     bson.NewObjectId(),
-		Type:   body.Type,
-		From:   body.From,
-		To:     body.To,
-		Amount: body.Amount,
-		Denom:  body.Denom,
-		Channel1: body.Channel1,
-		Channel2: body.Channel2,
-		Client1: body.Client1,
-		Client2: body.Client2,
+		Id:          bson.NewObjectId(),
+		Type:        body.Type,
+		From:        body.From,
+		To:          body.To,
+		Amount:      body.Amount,
+		Denom:       body.Denom,
+		Channel1:    body.Channel1,
+		Channel2:    body.Channel2,
+		Client1:     body.Client1,
+		Client2:     body.Client2,
 		Connection1: body.Connection1,
 		Connection2: body.Connection2,
-		FromChain: body.FromChain,
-		FromNode: body.FromNode,
-		ToChain: body.ToChain,
-		ToNode:body.ToNode,
+		FromChain:   body.FromChain,
+		FromNode:    body.FromNode,
+		ToChain:     body.ToChain,
+		ToNode:      body.ToNode,
 		Transfer: types.TxnRes{
 			Success:   body.Transfer.Success,
 			Message:   body.Transfer.Message,
@@ -362,7 +416,7 @@ func AddTransactions(res http.ResponseWriter, req *http.Request)  {
 	})
 }
 
-func GetTransactions(res http.ResponseWriter, req *http.Request)  {
+func GetTransactions(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	var query = bson.M{}
 	params := req.URL.Query()
