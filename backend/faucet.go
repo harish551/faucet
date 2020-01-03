@@ -237,7 +237,12 @@ func getCoins(res http.ResponseWriter, req *http.Request) {
 	(res).Header().Set("Access-Control-Allow-Origin", "*")
 
 	if len(address) != 45 {
-		panic("Invalid address")
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:  false,
+			Message: "invalid address",
+		})
+		return
 	}
 
 	//check account balance
