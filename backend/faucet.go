@@ -23,6 +23,7 @@ import (
 	"github.com/vitwit/faucet/backend/db"
 	"gopkg.in/mgo.v2"
 	"github.com/rs/cors"
+	"io/ioutil"
 )
 
 type ErrorResponse struct {
@@ -87,6 +88,7 @@ var pass string
 var node string
 var publicUrl string
 var nodes map[string]string
+var lcds map[string]string
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -123,6 +125,13 @@ func main() {
 		log.Fatalln("failed unmarshalling nodes %v", err1)
 	}
 
+	lcd := getEnv("LCD_NODE")
+
+	err2 := json.Unmarshal([]byte(lcd), &lcds)
+	if err2 != nil {
+		log.Fatalln("failed unmarshalling lcds %v", err2)
+	}
+
 	recaptcha.Init(recaptchaSecretKey)
 
 	db.InitDB()
@@ -132,6 +141,7 @@ func main() {
 	r.HandleFunc("/claim/tokens", getCoins)
 	r.HandleFunc("/transactions", AddTransactions).Methods(http.MethodPost)
 	r.HandleFunc("/transactions", GetTransactions).Methods(http.MethodGet)
+	r.HandleFunc("/lcd/chains/{chainId}/txs/{txHash}", GetLcdTx).Methods(http.MethodGet)
 
 	methods := []string{http.MethodGet, http.MethodPost, http.MethodDelete, http.MethodOptions, http.MethodPut}
 	origins := []string{"*"}
@@ -214,6 +224,74 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 	}
 
 	return nil
+}
+
+func GetLcdTx(res http.ResponseWriter, req *http.Request)  {
+	params := mux.Vars(req)
+	hash := params["txHash"]
+	chainId := params["chainId"]
+
+	if hash == "" {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:false,
+			Message: "Tx hash is required",
+		})
+		return
+	}
+
+	if chainId == "" {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:false,
+			Message: "Chain id is required",
+		})
+		return
+	}
+
+	url := lcds[chainId]
+
+	resp, err := http.Get(url + "/txs/"+hash)
+
+	if err != nil {
+		fmt.Printf("Error while accessing lcd %v", err)
+
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:false,
+			Message: "Error accessing lcd end point",
+			Error: err,
+		})
+		return
+
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	type response struct {
+		Height string `json:"height"`
+		Txhash string `json:"txhash"`
+		RawLog interface{} `json:"raw_log"`
+		Logs interface{}   `json:"logs"`
+		GasWanted string `json:"gas_wanted"`
+		GasUsed string `json:"gas_used"`
+		Tx interface{} `json:"tx"`
+		Timestamp string `json:"timestamp"`
+		Events interface{} `json:"events"`
+	}
+
+	var lcdResponse response
+
+	err1 := json.Unmarshal(body, &lcdResponse)
+
+	if err1 != nil {
+		log.Fatalln("failed unmarshalling response %v", err1)
+	}
+
+	res.WriteHeader(http.StatusOK)
+	json.NewEncoder(res).Encode(lcdResponse)
+	return
 }
 
 func getCoins(res http.ResponseWriter, req *http.Request) {
