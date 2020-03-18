@@ -68,7 +68,7 @@ type Account_query struct {
 }
 
 var (
-	DENOM = "x3ngm"
+	DENOM = "utree"
 )
 
 var chain string
@@ -151,10 +151,10 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func CheckAccountBalance(address string, amountFaucet string, key string, chain string, node string) error {
+func CheckAccountBalance(pass string, address string, amountFaucet string, key string, chain string, node string) error {
 	var queryRes AccountQueryRes
 
-	command := fmt.Sprintf("xrncli query account %s --chain-id %s --node %s -o json", address, node, chain)
+	command := fmt.Sprintf("echo \"%s\" | xrncli query account %s --chain-id %s --node %s -o json", pass, address, node, chain)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -201,14 +201,28 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	// }
 
 	if len(address) != 43 {
-		panic("Invalid address")
+		fmt.Println("Invalid address", len(address), address);
+		//panic("Invalid address")
+                res.WriteHeader(http.StatusBadRequest)
+                json.NewEncoder(res).Encode(ErrorResponse{
+                        Status: false,
+                        Message: "Invalid address",
+                })
+                return
 	}
 
 	// make sure captcha is valid
 	clientIP := realip.FromRequest(request)
 	captchaPassed, captchaErr := recaptcha.Confirm(clientIP, captchaResponse)
 	if captchaErr != nil {
-		panic(captchaErr)
+		//panic(captchaErr)
+
+                res.WriteHeader(http.StatusBadRequest)
+                json.NewEncoder(res).Encode(ErrorResponse{
+                        Status: false,
+                        Message: "Invalid captcha",
+                })
+                return
 	}
 
 	fmt.Println("Captcha passed? ", captchaPassed)
@@ -225,7 +239,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 
 		//check account balance
-		err := CheckAccountBalance(address, amountFaucet, key, chain, node)
+		err := CheckAccountBalance(pass, address, amountFaucet, key, chain, node)
 
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
@@ -244,7 +258,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		fmt.Println(sendFaucet, time.Now().UTC().Format(time.RFC3339), " -- sending [1]")
 
-		executeCmd(sendFaucet, pass)
+		executeCmd(sendFaucet, pass, pass)
 	}
 
 	res.WriteHeader(http.StatusOK)
