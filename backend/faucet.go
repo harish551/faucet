@@ -151,10 +151,10 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func CheckAccountBalance(address string, amountFaucet string, key string, chain string) error {
+func CheckAccountBalance(address string, amountFaucet string, key string, chain string, node string) error {
 	var queryRes AccountQueryRes
 
-	command := fmt.Sprintf("emcli query account %s --chain-id %s -o json", address, chain)
+	command := fmt.Sprintf("xrncli query account %s --chain-id %s --node %s -o json", address, node, chain)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -169,7 +169,7 @@ func CheckAccountBalance(address string, amountFaucet string, key string, chain 
 	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
 		for _, coin := range queryRes.Value.Coins {
 			if coin.Denom == DENOM {
-				if coin.Amount < 1000 {
+				if coin.Amount < 9000000 {
 					return  nil
 				} else {
 					return errors.New("You have enough tokens in your account")
@@ -200,7 +200,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	// 	panic(encodeErr)
 	// }
 
-	if len(address) != 45 {
+	if len(address) != 43 {
 		panic("Invalid address")
 	}
 
@@ -225,7 +225,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 
 		//check account balance
-		err := CheckAccountBalance(address, amountFaucet, key, chain)
+		err := CheckAccountBalance(address, amountFaucet, key, chain, node)
 
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
@@ -239,9 +239,11 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// send the coins!
 		sendFaucet := fmt.Sprintf(
-			"emcli tx send %v %v %v --chain-id %v",
-			key, address, amountFaucet, chain)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
+			"xrncli tx send %v %v %v --chain-id %v --node %v -y",
+			key, address, amountFaucet, chain, node)
+
+		fmt.Println(sendFaucet, time.Now().UTC().Format(time.RFC3339), " -- sending [1]")
+
 		executeCmd(sendFaucet, pass)
 	}
 
