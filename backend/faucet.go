@@ -128,7 +128,7 @@ func getCmd(command string) *exec.Cmd {
 func CheckAccountBalance(address string, amountFaucet string, key string) error {
 	var queryRes AccountQueryRes
 
-	command := fmt.Sprintf("akash query account %s -m json", address)
+	command := fmt.Sprintf("akash query account %s --node %v -m json", address, node)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -205,10 +205,13 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		}
 
 		// send the coins!
+		
 		sendFaucet := fmt.Sprintf(
-			"akash send %v %v -k %v",
-			amountFaucet, address, key)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), address, "[1]")
+			"akash send %v %v -k %v --node %v",
+			amountFaucet, address, key, node)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), "akash send %v %v -k %v --node %v",
+			amountFaucet, address, key, node)
+		
 		executeCmd(sendFaucet, pass)
 	}
 
