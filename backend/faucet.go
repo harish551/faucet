@@ -8,14 +8,15 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	"errors"
+
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
-	"math"
 )
 
 type ErrorResponse struct {
@@ -30,19 +31,21 @@ type SuccessResponse struct {
 }
 
 type AccountQueryRes struct {
-	Account_query []Account_query `json:"account_query"`
-	Raw           []Raw           `json:"raw"`
+	Type  string `json:"type"`
+	Value Value  `json:"value"`
 }
 
-type Raw struct {
-	Address string `json:"address"`
-	Balance int    `json:"balance"`
+type Value struct {
+	Address        string  `json:"address"`
+	Coins          []Coins `json:"coins"`
+	Public_key     string  `json:"public_key"`
+	Account_number int     `json:"account_number"`
+	Sequence       int     `json:"sequence"`
 }
 
-type Account_query struct {
-	Balance            string `json:"balance"`
-	Nonce              string `json:"nonce"`
-	Public_key_address string `json:"public_key_address"`
+type Coins struct {
+	Denom  string `json:"denom"`
+	Amount string `json:"amount"`
 }
 
 var chain string
@@ -53,6 +56,9 @@ var key string
 var pass string
 var node string
 var publicUrl string
+var maxTokens float64
+
+const ADDR_LENGTH int = 44
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -83,6 +89,10 @@ func main() {
 	pass = getEnv("FAUCET_PASS")
 	node = getEnv("FAUCET_NODE")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
+	maxTokens, err = strconv.ParseFloat(getEnv("MAX_TOKENS_ALLOWED"), 64)
+	if err != nil {
+		log.Fatal("MAX_TOKENS_ALLOWED value is invalid")
+	}
 
 	recaptcha.Init(recaptchaSecretKey)
 
@@ -127,8 +137,9 @@ func getCmd(command string) *exec.Cmd {
 
 func CheckAccountBalance(address string, amountFaucet string, key string) error {
 	var queryRes AccountQueryRes
+	var balance float64
 
-	command := fmt.Sprintf("akash query account %s --node %v -m json", address, node)
+	command := fmt.Sprintf("akashctl query account %s --node %v --chain-id %v -o json", address, node, chain)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -140,8 +151,16 @@ func CheckAccountBalance(address string, amountFaucet string, key string) error 
 		}
 	}
 
-	if (len(queryRes.Raw) != 0 && float64(queryRes.Raw[0].Balance) < float64(1000)*math.Pow(10, 6)) ||
-		accErr != nil {
+	if len(queryRes.Value.Coins) == 0 {
+		return nil
+	}
+
+	balance, err := strconv.ParseFloat(queryRes.Value.Coins[0].Amount, 64)
+	if err != nil {
+		return nil
+	}
+
+	if balance < maxTokens || accErr != nil {
 		return nil
 	}
 
@@ -167,7 +186,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	// 	panic(encodeErr)
 	// }
 
-	if len(address) != 40 {
+	if len(address) != ADDR_LENGTH {
 		panic("Invalid address")
 	}
 
@@ -183,7 +202,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if !captchaPassed {
 		res.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(res).Encode(ErrorResponse{
-			Status: false,
+			Status:  false,
 			Message: "Invalid captcha",
 		})
 		return
@@ -205,14 +224,13 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		}
 
 		// send the coins!
-		
+
 		sendFaucet := fmt.Sprintf(
-			"akash send %v %v -k %v --node %v",
-			amountFaucet, address, key, node)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), "akash send %v %v -k %v --node %v",
-			amountFaucet, address, key, node)
-		
-		executeCmd(sendFaucet, pass)
+			"akashctl tx send %v %v %v --from %v --node %v --chain-id %v -y",
+			key, address, amountFaucet, key, node, chain)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
+
+		executeCmd(sendFaucet, pass, pass)
 	}
 
 	res.WriteHeader(http.StatusOK)
