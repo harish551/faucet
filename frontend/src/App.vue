@@ -2,9 +2,8 @@
 #app
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom Akash Network
+  #bottom Cosmos Network
 </template>
-
 
 <script>
 import { mapGetters } from "vuex";

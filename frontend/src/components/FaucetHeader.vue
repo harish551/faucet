@@ -1,6 +1,6 @@
 <template lang="pug">
 .section-header
-  h1 Akash Testnet Faucet
+  h1 Cosmos Testnet Faucet
   p Hello !!! Use this faucet to get test tokens for the #[span.chain {{ config.chain }}] testnet. Please don't abuse this service&mdash;the number of available tokens is limited.
 </template>
 
