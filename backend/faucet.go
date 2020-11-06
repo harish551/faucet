@@ -38,7 +38,7 @@ type AccountQueryRes struct {
 type Value struct {
 	Address        string  `json:"address"`
 	Coins          []Coins `json:"coins"`
-	Public_key     interface  `json:"public_key"`
+	Public_key     interface{}  `json:"public_key"`
 	Account_number int     `json:"account_number"`
 	Sequence       int     `json:"sequence"`
 }
