@@ -8,10 +8,12 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
 	"errors"
+
 	"github.com/dpapathanasiou/go-recaptcha"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
@@ -28,43 +30,14 @@ type SuccessResponse struct {
 	Data   interface{} `json:"data"`
 }
 
-type AccountQueryRes struct {
-	//emcli query struct
-	Type 		string 			`json:"type"`
-	Value 		Value 			`json:"value"`
-
-	//Faucet query struct
-	//Account_query []Account_query `json:"account_query"`
-	//Raw           []Raw           `json:"raw"`
+type BalanceQueryRes struct {
+	Balances   []Coins     `json:"balances"`
+	Pagination interface{} `json:"pagination"`
 }
 
-type Value struct {
-	Address 		string 		`json:"address"`
-	Coins 			[]Coin 		`json:"coins"`
-	Public_key 		Public_key 	`json:"public_key"`
-	Account_number 	int64 		`json:"account_number"`
-	Sequence 		int64 		`json:"sequence"`
-}
-
-type Coin struct {
-	Denom 			string 		`json:"denom"`
-	Amount 			int64 		`json:"amount"`
-}
-
-type Public_key struct {
-	Type 		string 		`json:"type"`
-	Value 		string 		`json:"value"`
-}
-
-type Raw struct {
-	Address string `json:"address"`
-	Balance int    `json:"balance"`
-}
-
-type Account_query struct {
-	Balance            string `json:"balance"`
-	Nonce              string `json:"nonce"`
-	Public_key_address string `json:"public_key_address"`
+type Coins struct {
+	Denom  string `json:"denom"`
+	Amount string `json:"amount"`
 }
 
 var (
@@ -79,6 +52,10 @@ var key string
 var pass string
 var node string
 var publicUrl string
+var maxTokens float64
+var cliName string
+
+const ADDR_LENGTH int = 44
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -109,6 +86,11 @@ func main() {
 	pass = getEnv("FAUCET_PASS")
 	node = getEnv("FAUCET_NODE")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
+	cliName = getEnv("CLI_NAME")
+	maxTokens, err = strconv.ParseFloat(getEnv("MAX_TOKENS_ALLOWED"), 64)
+	if err != nil {
+		log.Fatal("MAX_TOKENS_ALLOWED value is invalid")
+	}
 
 	recaptcha.Init(recaptchaSecretKey)
 
@@ -151,10 +133,11 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func CheckAccountBalance(pass string, address string, amountFaucet string, key string, chain string, node string) error {
-	var queryRes AccountQueryRes
+func CheckAccountBalance(address string, amountFaucet string, key string) error {
+	var queryRes BalanceQueryRes
+	var balance float64
 
-	command := fmt.Sprintf("echo \"%s\" | xrncli query account %s --chain-id %s --node %s -o json", pass, address, node, chain)
+	command := fmt.Sprintf("%s query bank balances %s --node %v --chain-id %v -o json", cliName, address, node, chain)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -166,19 +149,20 @@ func CheckAccountBalance(pass string, address string, amountFaucet string, key s
 		}
 	}
 
-	if &queryRes != nil && &queryRes.Value != nil && &queryRes.Value.Coins != nil && len(queryRes.Value.Coins)>0{
-		for _, coin := range queryRes.Value.Coins {
-			if coin.Denom == DENOM {
-				if coin.Amount < 9000000 {
-					return  nil
-				} else {
-					return errors.New("You have enough tokens in your account")
-				}
-			}
-		}
+	if len(queryRes.Balances) == 0 {
+		return nil
 	}
 
-	return nil
+	balance, err := strconv.ParseFloat(queryRes.Balances[0].Amount, 64)
+	if err != nil {
+		return nil
+	}
+
+	if balance < maxTokens || accErr != nil {
+		return nil
+	}
+
+	return errors.New("You have enough tokens in your account")
 }
 
 func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
@@ -200,15 +184,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	// 	panic(encodeErr)
 	// }
 
-	if len(address) != 43 {
-		fmt.Println("Invalid address", len(address), address);
-		//panic("Invalid address")
-                res.WriteHeader(http.StatusBadRequest)
-                json.NewEncoder(res).Encode(ErrorResponse{
-                        Status: false,
-                        Message: "Invalid address",
-                })
-                return
+	if len(address) != ADDR_LENGTH {
+		panic("Invalid address")
 	}
 
 	// make sure captcha is valid
@@ -230,7 +207,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if !captchaPassed {
 		res.WriteHeader(http.StatusBadRequest)
 		json.NewEncoder(res).Encode(ErrorResponse{
-			Status: false,
+			Status:  false,
 			Message: "Invalid captcha",
 		})
 		return
@@ -239,7 +216,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 
 		//check account balance
-		err := CheckAccountBalance(pass, address, amountFaucet, key, chain, node)
+		err := CheckAccountBalance(address, amountFaucet, key)
 
 		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
@@ -252,11 +229,11 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		}
 
 		// send the coins!
-		sendFaucet := fmt.Sprintf(
-			"xrncli tx send %v %v %v --chain-id %v --node %v -y",
-			key, address, amountFaucet, chain, node)
 
-		fmt.Println(sendFaucet, time.Now().UTC().Format(time.RFC3339), " -- sending [1]")
+		sendFaucet := fmt.Sprintf(
+			"%s tx bank send %v %v %v --from %v --node %v --chain-id %v -y",
+			cliName, key, address, amountFaucet, key, node, chain)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 		executeCmd(sendFaucet, pass, pass)
 	}
