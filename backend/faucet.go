@@ -55,7 +55,7 @@ var publicUrl string
 var maxTokens float64
 var cliName string
 
-const ADDR_LENGTH int = 44
+const ADDR_LENGTH int = 45
 
 type claim_struct struct {
 	Address  string `json:"address"`
