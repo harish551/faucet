@@ -1,7 +1,7 @@
 <template lang="pug">
 .section-header
   div
-    img(src="https://solarimpulse.com/files/companies/logo/2018-10-03-164333/logo_Regen_Network.jpg" wdith="200px")
+    img(src="https://www.godan.info/sites/default/files/styles/partner_results_page_logo/public/webform/logo_white_0.png?itok=UkKK2hmd" width="200px")
   br
   h1 {{config.chain}} testnet faucet
   p Hello !!! Use this faucet to get test tokens for the #[span.chain {{ config.chain }}] testnet. Please don't abuse this service&mdash;the number of available tokens is limited.
