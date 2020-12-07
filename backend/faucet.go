@@ -207,10 +207,12 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	if captchaPassed {
 
 		var errMsg string
+		var isError bool
 		//check account balance
 		err := CheckAccountBalance(address, amountFaucet, key)
 
 		if err != nil {
+			isError = true
 			errMsg = fmt.Sprintf("Chain-1: %s", err.Error())
 		} else {
 			// send the coins!
@@ -231,6 +233,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 			err = CheckAccountBalance(address, amountFaucet, key)
 
 			if err != nil {
+				isError = true
 				errMsg = fmt.Sprintf("%s, Chain-2: %s", errMsg, err.Error())
 			} else {
 				// send the coins!
@@ -246,7 +249,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		}
 
 		// If there is eror in any of chains,then this will be executed
-		if err != nil {
+		if isError {
 			res.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(res).Encode(ErrorResponse{
 				Status:  false,
