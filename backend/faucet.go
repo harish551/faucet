@@ -40,13 +40,13 @@ type Coins struct {
 	Amount string `json:"amount"`
 }
 
-var chain string
+var chain, chain2 string
 var recaptchaSecretKey string
 var amountFaucet string
 var amountSteak string
 var key string
 var pass string
-var node string
+var node, node2 string
 var publicUrl string
 var maxTokens float64
 var cliName string
@@ -83,6 +83,8 @@ func main() {
 	node = getEnv("FAUCET_NODE")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
 	cliName = getEnv("CLI_NAME")
+	node2 = getEnv("FAUCET_NODE_2")
+	chain2 = getEnv("FAUCET_CHAIN_2")
 	maxTokens, err = strconv.ParseFloat(getEnv("MAX_TOKENS_ALLOWED"), 64)
 	if err != nil {
 		log.Fatal("MAX_TOKENS_ALLOWED value is invalid")
@@ -204,27 +206,55 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 	if captchaPassed {
 
+		var errMsg string
 		//check account balance
 		err := CheckAccountBalance(address, amountFaucet, key)
 
 		if err != nil {
+			errMsg = fmt.Sprintf("Chain-1: %s", err.Error())
+		} else {
+			// send the coins!
+			sendFaucet := fmt.Sprintf(
+				"%s tx send %v %v %v --from %v --node %v --chain-id %v -y",
+				cliName, key, address, amountFaucet, key, node, chain)
+			fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
+
+			executeCmd(sendFaucet, pass, pass)
+			errMsg = fmt.Sprintf("Chain-1: Successfully sent tokens to  %s", address)
+		}
+
+		// Chain 2 faucet
+		if node2 != "" {
+			node = node2
+			chain = chain2
+			//check account balance
+			err = CheckAccountBalance(address, amountFaucet, key)
+
+			if err != nil {
+				errMsg = fmt.Sprintf("%s, Chain-2: %s", errMsg, err.Error())
+			} else {
+				// send the coins!
+				sendFaucet := fmt.Sprintf(
+					"%s tx send %v %v %v --from %v --node %v --chain-id %v -y",
+					cliName, key, address, amountFaucet, key, node, chain)
+				fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
+
+				executeCmd(sendFaucet, pass, pass)
+				errMsg = fmt.Sprintf("%s, Chain-2: Successfully sent tokens to  %s", errMsg, address)
+
+			}
+		}
+
+		// If there is eror in any of chains,then this will be executed
+		if err != nil {
 			res.WriteHeader(http.StatusBadRequest)
 			json.NewEncoder(res).Encode(ErrorResponse{
 				Status:  false,
-				Message: err.Error(),
+				Message: errMsg,
 				Error:   err,
 			})
 			return
 		}
-
-		// send the coins!
-
-		sendFaucet := fmt.Sprintf(
-			"%s tx send %v %v %v --from %v --node %v --chain-id %v -y",
-			cliName, key, address, amountFaucet, key, node, chain)
-		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
-
-		executeCmd(sendFaucet, pass, pass)
 	}
 
 	res.WriteHeader(http.StatusOK)
