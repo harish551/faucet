@@ -133,11 +133,11 @@ func getCmd(command string) *exec.Cmd {
 	return cmd
 }
 
-func CheckAccountBalance(address string, amountFaucet string, key string) error {
+func CheckAccountBalance(address, key, nodeAddr, chainId string) error {
 	var queryRes BalanceQueryRes
 	var balance float64
 
-	command := fmt.Sprintf("%s query bank balances %s --node %v --chain-id %v -o json", cliName, address, node, chain)
+	command := fmt.Sprintf("%s query bank balances %s --node %v --chain-id %v -o json", cliName, address, nodeAddr, chainId)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -211,7 +211,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		var errMsg string
 		var isError bool
 		//check account balance
-		err := CheckAccountBalance(address, amountFaucet, key)
+		err := CheckAccountBalance(address, key, node, chain)
 
 		if err != nil {
 			isError = true
@@ -229,10 +229,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		// Chain 2 faucet
 		if node2 != "" {
-			node = node2
-			chain = chain2
 			//check account balance
-			err = CheckAccountBalance(address, amountFaucet, key)
+			err = CheckAccountBalance(address, key, node2, chain2)
 
 			if err != nil {
 				isError = true
@@ -241,7 +239,7 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 				// send the coins!
 				sendFaucet := fmt.Sprintf(
 					"%s tx send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
-					cliName, key, address, amountFaucet, key, node, chain, fees2)
+					cliName, key, address, amountFaucet, key, node2, chain2, fees2)
 				fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 				executeCmd(sendFaucet, pass, pass)
