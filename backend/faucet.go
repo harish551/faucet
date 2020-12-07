@@ -42,7 +42,7 @@ type Coins struct {
 
 var chain, chain2 string
 var recaptchaSecretKey string
-var amountFaucet string
+var amountFaucet, fees1, fees2 string
 var amountSteak string
 var key string
 var pass string
@@ -85,6 +85,8 @@ func main() {
 	cliName = getEnv("CLI_NAME")
 	node2 = getEnv("FAUCET_NODE_2")
 	chain2 = getEnv("FAUCET_CHAIN_2")
+	fees1 = getEnv("FEES_1")
+	fees2 = getEnv("FEES_2")
 	maxTokens, err = strconv.ParseFloat(getEnv("MAX_TOKENS_ALLOWED"), 64)
 	if err != nil {
 		log.Fatal("MAX_TOKENS_ALLOWED value is invalid")
@@ -217,8 +219,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		} else {
 			// send the coins!
 			sendFaucet := fmt.Sprintf(
-				"%s tx send %v %v %v --from %v --node %v --chain-id %v -y",
-				cliName, key, address, amountFaucet, key, node, chain)
+				"%s tx send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
+				cliName, key, address, amountFaucet, key, node, chain, fees1)
 			fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 			executeCmd(sendFaucet, pass, pass)
@@ -238,8 +240,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 			} else {
 				// send the coins!
 				sendFaucet := fmt.Sprintf(
-					"%s tx send %v %v %v --from %v --node %v --chain-id %v -y",
-					cliName, key, address, amountFaucet, key, node, chain)
+					"%s tx send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
+					cliName, key, address, amountFaucet, key, node, chain, fees2)
 				fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 				executeCmd(sendFaucet, pass, pass)
