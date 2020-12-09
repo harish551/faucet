@@ -1,6 +1,6 @@
-# Cosmos Testnet Faucet
+# Regen Testnet Faucet
 
-This faucet app allows anyone who passes a captcha to request tokens for a Cosmos account address. This app needs to be deployed on a Cosmos testnet full node, because it relies on using the `gaiacli` command to send tokens.
+This faucet app allows anyone who passes a captcha to request tokens for a Regen account address. This app needs to be deployed on a Regen testnet full node, because it relies on using the `gaiacli` command to send tokens.
 
 ## Prerequisites
 
@@ -13,7 +13,8 @@ If you don't have a reCAPTCHA site setup for the faucet, now is the time to get 
 The backend requires Go and the `dep` dependency tool to be installed. For the frontend, you also need to have node.js and the `yarn` dependency tool installed. 
 
 ```
-go get git@github.com:cosmos/faucet
+git clone github.com/vitiwt/faucet
+git checkout regen
 ```
 
 ## Backend Setup
@@ -23,7 +24,7 @@ go get git@github.com:cosmos/faucet
 First, set the environment variables for the backend, using `./backend/.env` as a template:
 
 ```
-cd $GOPATH/src/github.com/cosmos/faucet/backend
+cd $GOPATH/src/github.com/vitwit/faucet/backend
 cp .env .env.local
 vi .env.local
 ```
@@ -54,7 +55,7 @@ Run `go run faucet.go` in the `backend` directory to serve the backend.
 First, set the environment variables for the frontend, using `./frontend/.env` as a template:
 
 ```
-cd $GOPATH/src/github.com/cosmos/faucet/frontend
+cd $GOPATH/src/github.com/vitwit/faucet/frontend
 cp .env .env.local
 vi .env.local
 ```

@@ -30,23 +30,19 @@ type SuccessResponse struct {
 	Data   interface{} `json:"data"`
 }
 
-type AccountQueryRes struct {
-	Type  string `json:"type"`
-	Value Value  `json:"value"`
-}
-
-type Value struct {
-	Address        string  `json:"address"`
-	Coins          []Coins `json:"coins"`
-	Public_key     interface{}  `json:"public_key"`
-	Account_number int     `json:"account_number"`
-	Sequence       int     `json:"sequence"`
+type BalanceQueryRes struct {
+	Balances   []Coins     `json:"balances"`
+	Pagination interface{} `json:"pagination"`
 }
 
 type Coins struct {
 	Denom  string `json:"denom"`
 	Amount string `json:"amount"`
 }
+
+var (
+	DENOM = "utree"
+)
 
 var chain string
 var recaptchaSecretKey string
@@ -57,8 +53,9 @@ var pass string
 var node string
 var publicUrl string
 var maxTokens float64
+var cliName string
 
-const ADDR_LENGTH int = 44
+const ADDR_LENGTH int = 45
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -89,6 +86,7 @@ func main() {
 	pass = getEnv("FAUCET_PASS")
 	node = getEnv("FAUCET_NODE")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
+	cliName = getEnv("CLI_NAME")
 	maxTokens, err = strconv.ParseFloat(getEnv("MAX_TOKENS_ALLOWED"), 64)
 	if err != nil {
 		log.Fatal("MAX_TOKENS_ALLOWED value is invalid")
@@ -136,10 +134,10 @@ func getCmd(command string) *exec.Cmd {
 }
 
 func CheckAccountBalance(address string, amountFaucet string, key string) error {
-	var queryRes AccountQueryRes
+	var queryRes BalanceQueryRes
 	var balance float64
 
-	command := fmt.Sprintf("akashctl query account %s --node %v --chain-id %v -o json", address, node, chain)
+	command := fmt.Sprintf("%s query bank balances %s --node %v --chain-id %v -o json", cliName, address, node, chain)
 	fmt.Println(" command ", command)
 
 	out, accErr := exec.Command("bash", "-c", command).Output()
@@ -151,11 +149,11 @@ func CheckAccountBalance(address string, amountFaucet string, key string) error 
 		}
 	}
 
-	if len(queryRes.Value.Coins) == 0 {
+	if len(queryRes.Balances) == 0 {
 		return nil
 	}
 
-	balance, err := strconv.ParseFloat(queryRes.Value.Coins[0].Amount, 64)
+	balance, err := strconv.ParseFloat(queryRes.Balances[0].Amount, 64)
 	if err != nil {
 		return nil
 	}
@@ -194,7 +192,14 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 	clientIP := realip.FromRequest(request)
 	captchaPassed, captchaErr := recaptcha.Confirm(clientIP, captchaResponse)
 	if captchaErr != nil {
-		panic(captchaErr)
+		//panic(captchaErr)
+
+                res.WriteHeader(http.StatusBadRequest)
+                json.NewEncoder(res).Encode(ErrorResponse{
+                        Status: false,
+                        Message: "Invalid captcha",
+                })
+                return
 	}
 
 	fmt.Println("Captcha passed? ", captchaPassed)
@@ -226,8 +231,8 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		// send the coins!
 
 		sendFaucet := fmt.Sprintf(
-			"akashctl tx send %v %v %v --from %v --node %v --chain-id %v -y",
-			key, address, amountFaucet, key, node, chain)
+			"%s tx bank send %v %v %v --from %v --node %v --chain-id %v -y",
+			cliName, key, address, amountFaucet, key, node, chain)
 		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 		executeCmd(sendFaucet, pass, pass)
