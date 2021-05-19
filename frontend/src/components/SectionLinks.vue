@@ -4,25 +4,25 @@
     h1 Community Links
   .section-main
     list-item(
-      href="https://riot.im/app/#/room/#akashnet:matrix.org"
+      href="https://riot.im/app/#/room/#cosmos:matrix.org"
       target="_blank"
       title="Community Chat"
-      subtitle="#akashnet")
+      subtitle="#cosmos")
     list-item(
-      href="https://t.me/AkashNW"
+      href="https://riot.im/app/#/room/#cosmos_validators:matrix.org"
       target="_blank"
-      title="Telegram"
-      subtitle="#AkashNW")
+      title="Validator Chat"
+      subtitle="#cosmos_validators")
     list-item(
-      href="https://github.com/ovrclk/akash"
+      href="https://explorecosmos.network"
       target="_blank"
-      title="Source Code"
-      subtitle="ovrclk/akash")
+      title="Testnet Explorer"
+      subtitle="explorecosmos.network")
     list-item(
-      href="https://akash.network/"
+      href="https://cosmos.network"
       target="_blank"
-      title="Website"
-      subtitle="akash.network")
+      title="Cosmos Website"
+      subtitle="cosmos.network")
 </template>
 
 <script>
