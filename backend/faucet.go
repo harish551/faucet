@@ -173,17 +173,6 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 	(res).Header().Set("Access-Control-Allow-Origin", "*")
 
-	// // make sure address is bech32
-	// readableAddress, decodedAddress, decodeErr := bech32.DecodeAndConvert(claim.Address)
-	// if decodeErr != nil {
-	// 	panic(decodeErr)
-	// }
-	// // re-encode the address in bech32
-	// encodedAddress, encodeErr := bech32.ConvertAndEncode(readableAddress, decodedAddress)
-	// if encodeErr != nil {
-	// 	panic(encodeErr)
-	// }
-
 	if len(address) != ADDR_LENGTH {
 		panic("Invalid address")
 	}
