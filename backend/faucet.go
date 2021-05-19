@@ -215,16 +215,16 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 		if err != nil {
 			isError = true
-			errMsg = fmt.Sprintf("Chain-1: %s", err.Error())
+			errMsg = fmt.Sprintf("%s: %s", chain, err.Error())
 		} else {
 			// send the coins!
 			sendFaucet := fmt.Sprintf(
-				"%s tx send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
+				"%s tx bank send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
 				cliName, key, address, amountFaucet, key, node, chain, fees1)
 			fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 			executeCmd(sendFaucet, pass, pass)
-			errMsg = fmt.Sprintf("Chain-1: Successfully sent tokens to  %s", address)
+			errMsg = fmt.Sprintf("%s: Successfully sent tokens to  %s", chain, address)
 		}
 
 		// Chain 2 faucet
@@ -234,16 +234,16 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 			if err != nil {
 				isError = true
-				errMsg = fmt.Sprintf("%s, Chain-2: %s", errMsg, err.Error())
+				errMsg = fmt.Sprintf("%s, %s: %s", errMsg, chain2, err.Error())
 			} else {
 				// send the coins!
 				sendFaucet := fmt.Sprintf(
-					"%s tx send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
+					"%s tx bank send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
 					cliName, key, address, amountFaucet, key, node2, chain2, fees2)
 				fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 				executeCmd(sendFaucet, pass, pass)
-				errMsg = fmt.Sprintf("%s, Chain-2: Successfully sent tokens to  %s", errMsg, address)
+				errMsg = fmt.Sprintf("%s, %s: Successfully sent tokens to  %s", errMsg, chain2, address)
 
 			}
 		}
