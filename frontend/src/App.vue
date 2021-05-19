@@ -1,29 +1,19 @@
 <template lang="pug">
 #app
-  tm-cookie-consent
-  .top-bar
-    .left
-      .key testnet:
-      .value {{ config.chain }}
-    .right
-      a(href="https://explorecosmos.network" target="_blank") explorer #[i.material-icons assessment]
-  img(src="~assets/brandmark.png" width="512" height="512")
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom &copy; 2018 Interchain Foundation
+  #bottom Vitwit
 </template>
 
 
 <script>
 import { mapGetters } from "vuex";
-import { TmCookieConsent } from "@tendermint/ui";
 import Notifications from "@nylira/vue-notifications";
 
 export default {
   name: "app",
   components: {
-    Notifications,
-    TmCookieConsent
+    Notifications
   },
   computed: {
     ...mapGetters(["notifications", "config"])

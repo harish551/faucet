@@ -23,7 +23,6 @@
       form-group
         btn(v-if='sending' value='Sending...' disabled color="primary" size="lg")
         btn(v-else @click='onSubmit' value="Send me tokens" color="primary" size="lg" icon="send")
-  section-join
   section-links
 </template>
 
@@ -32,13 +31,12 @@ import axios from "axios";
 import VueRecaptcha from "vue-recaptcha";
 import { mapGetters } from "vuex";
 import { required } from "vuelidate/lib/validators";
-import b32 from "../scripts/b32";
 import Btn from "@nylira/vue-button";
 import Field from "@nylira/vue-field";
 import FormGroup from "../components/NiFormGroup";
 import FormMsg from "../components/NiFormMsg";
 import FaucetHeader from "../components/FaucetHeader";
-import SectionJoin from "../components/SectionJoin.vue";
+// import SectionJoin from "../components/SectionJoin.vue";
 import SectionLinks from "../components/SectionLinks.vue";
 export default {
   name: "faucet",
@@ -48,7 +46,6 @@ export default {
     FormGroup,
     FaucetHeader,
     FormMsg,
-    SectionJoin,
     SectionLinks,
     VueRecaptcha
   },
@@ -80,12 +77,27 @@ export default {
       if (this.$v.$error) return;
 
       this.sending = true;
-      axios
-        .post(this.config.claimUrl, {
-          address: this.fields.address,
-          response: this.fields.response
-        })
+
+      var data = {
+        address: this.fields.address.toString(),
+        response: this.fields.response.toString()
+      };
+
+      var bodyFormData = new FormData();
+      bodyFormData.set("address", data.address);
+      bodyFormData.set("response", data.response);
+
+      axios(
+        // .post(this.config.claimUrl, data)
+        {
+          method: "post",
+          url: this.config.claimUrl,
+          data: bodyFormData,
+          config: { headers: { "Content-Type": "multipart/form-data" } }
+        }
+      )
         .then(() => {
+          this.$refs.recaptcha.reset();
           this.sending = false;
           this.$store.commit("notify", {
             title: "Successfully Sent",
@@ -94,18 +106,28 @@ export default {
           this.resetForm();
         })
         .catch(err => {
+          this.$refs.recaptcha.reset();
+          var msg = err.message;
+          if (err.response && err.response.data && err.response.data.message) {
+            msg = err.response.data.message;
+          }
+
           this.sending = false;
           this.$store.commit("notifyError", {
             title: "Error Sending",
-            body: `An error occurred while trying to send: "${err.message}"`
+            body: `An error occurred while trying to send: "${msg}"`
           });
         });
     },
     bech32Validate(param) {
       try {
-        b32.decode(param);
-        this.bech32error = null;
-        return true;
+        if (param.length == 40) {
+          this.bech32error = null;
+          return true;
+        } else {
+          this.bech32error = "Invalid address";
+          return false;
+        }
       } catch (error) {
         this.bech32error = error.message;
         return false;
@@ -127,35 +149,45 @@ export default {
 </script>
 
 <style lang="stylus">
-@import '~variables'
+@import '~variables';
 
-#faucet
-  max-width 40rem
-  width 100%
-  margin 0 auto
+#faucet {
+  max-width: 60rem;
+  width: 100%;
+  margin: 0 auto;
+}
 
-.section
-  margin 0.5rem
-  padding 1rem
-  background var(--app-bg)
-  position relative
-  z-index 10
-  label
-    display none
+.section {
+  margin: 0.5rem;
+  padding: 1rem;
+  background: var(--app-bg);
+  position: relative;
+  z-index: 10;
 
-  input:-webkit-autofill
-    -webkit-text-fill-color var(--txt) !important
-    -webkit-box-shadow 0 0 0px 3rem var(--app-fg) inset
+  label {
+    display: none;
+  }
 
-  .section-main
-    padding 0 1rem
+  input:-webkit-autofill {
+    -webkit-text-fill-color: var(--txt) !important;
+    -webkit-box-shadow: 0 0 0px 3rem var(--app-fg) inset;
+  }
 
-@media screen and (min-width: 375px)
-  .section
-    padding 2rem 1rem
+  .section-main {
+    padding: 0 1rem;
+  }
+}
 
-@media screen and (min-width: 768px)
-  .section
-    padding 3rem 2rem
-    margin 1rem
+@media screen and (min-width: 375px) {
+  .section {
+    padding: 2rem 1rem;
+  }
+}
+
+@media screen and (min-width: 768px) {
+  .section {
+    padding: 3rem 2rem;
+    margin: 1rem;
+  }
+}
 </style>
