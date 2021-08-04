@@ -15,6 +15,7 @@ import (
 	"errors"
 
 	"github.com/dpapathanasiou/go-recaptcha"
+	"github.com/gorilla/mux"
 	"github.com/joho/godotenv"
 	"github.com/tomasen/realip"
 )
@@ -94,9 +95,14 @@ func main() {
 
 	recaptcha.Init(recaptchaSecretKey)
 
-	http.HandleFunc("/claim", getCoinsHandler)
+	r := mux.NewRouter()
+	r.HandleFunc("/claim", getCoinsHandler).Methods(http.MethodPost)
 
-	if err := http.ListenAndServe(publicUrl, nil); err != nil {
+	getR := r.Methods(http.MethodGet).Subrouter()
+	getR.HandleFunc("/faucet/{address}", curlFaucetHandler).Methods(http.MethodGet)
+	getR.Use(limit)
+
+	if err := http.ListenAndServe(publicUrl, r); err != nil {
 		log.Fatal("failed to start server", err)
 	}
 }
@@ -195,58 +201,67 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 		return
 	}
 
-	if captchaPassed {
+	checkAndExecuteTxsHandler(address, res, request)
+	return
+}
 
-		var errMsg string
-		var isError bool
+func curlFaucetHandler(res http.ResponseWriter, request *http.Request) {
+	vars := mux.Vars(request)
+	address := vars["address"]
+	checkAndExecuteTxsHandler(address, res, request)
+	return
+}
+
+func checkAndExecuteTxsHandler(address string, res http.ResponseWriter, request *http.Request) {
+	var errMsg string
+	var isError bool
+	//check account balance
+	err := CheckAccountBalance(address, key, node, chain)
+
+	if err != nil {
+		isError = true
+		errMsg = fmt.Sprintf("%s: %s", chain, err.Error())
+	} else {
+		// send the coins!
+		sendFaucet := fmt.Sprintf(
+			"%s tx bank send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
+			cliName, key, address, amountFaucet, key, node, chain, fees1)
+		fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
+
+		executeCmd(sendFaucet, pass, pass)
+		errMsg = fmt.Sprintf("%s: Successfully sent tokens to  %s", chain, address)
+	}
+
+	// Chain 2 faucet
+	if node2 != "" {
 		//check account balance
-		err := CheckAccountBalance(address, key, node, chain)
+		err = CheckAccountBalance(address, key, node2, chain2)
 
 		if err != nil {
 			isError = true
-			errMsg = fmt.Sprintf("%s: %s", chain, err.Error())
+			errMsg = fmt.Sprintf("%s, %s: %s", errMsg, chain2, err.Error())
 		} else {
 			// send the coins!
 			sendFaucet := fmt.Sprintf(
 				"%s tx bank send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
-				cliName, key, address, amountFaucet, key, node, chain, fees1)
+				cliName, key, address, amountFaucet, key, node2, chain2, fees2)
 			fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
 
 			executeCmd(sendFaucet, pass, pass)
-			errMsg = fmt.Sprintf("%s: Successfully sent tokens to  %s", chain, address)
+			errMsg = fmt.Sprintf("%s, %s: Successfully sent tokens to  %s", errMsg, chain2, address)
+
 		}
+	}
 
-		// Chain 2 faucet
-		if node2 != "" {
-			//check account balance
-			err = CheckAccountBalance(address, key, node2, chain2)
-
-			if err != nil {
-				isError = true
-				errMsg = fmt.Sprintf("%s, %s: %s", errMsg, chain2, err.Error())
-			} else {
-				// send the coins!
-				sendFaucet := fmt.Sprintf(
-					"%s tx bank send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
-					cliName, key, address, amountFaucet, key, node2, chain2, fees2)
-				fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
-
-				executeCmd(sendFaucet, pass, pass)
-				errMsg = fmt.Sprintf("%s, %s: Successfully sent tokens to  %s", errMsg, chain2, address)
-
-			}
-		}
-
-		// If there is eror in any of chains,then this will be executed
-		if isError {
-			res.WriteHeader(http.StatusBadRequest)
-			json.NewEncoder(res).Encode(ErrorResponse{
-				Status:  false,
-				Message: errMsg,
-				Error:   err,
-			})
-			return
-		}
+	// If there is eror in any of chains,then this will be executed
+	if isError {
+		res.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(res).Encode(ErrorResponse{
+			Status:  false,
+			Message: errMsg,
+			Error:   err,
+		})
+		return
 	}
 
 	res.WriteHeader(http.StatusOK)
