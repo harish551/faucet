@@ -100,7 +100,7 @@ func main() {
 
 	getR := r.Methods(http.MethodGet).Subrouter()
 	getR.HandleFunc("/faucet/{address}", curlFaucetHandler).Methods(http.MethodGet)
-	getR.Use(limit)
+	getR.Use(Limit)
 
 	if err := http.ListenAndServe(publicUrl, r); err != nil {
 		log.Fatal("failed to start server", err)
