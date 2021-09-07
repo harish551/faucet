@@ -4,25 +4,20 @@
     h1 Community Links
   .section-main
     list-item(
-      href="https://riot.im/app/#/room/#cosmos:matrix.org"
+      href="https://t.me/OmniFLixChat"
       target="_blank"
       title="Community Chat"
-      subtitle="#cosmos")
+      subtitle="#OmniFlixChat")
     list-item(
-      href="https://riot.im/app/#/room/#cosmos_validators:matrix.org"
-      target="_blank"
-      title="Validator Chat"
-      subtitle="#cosmos_validators")
-    list-item(
-      href="https://explorecosmos.network"
+      href="https://explorer.omniflix.network/"
       target="_blank"
       title="Testnet Explorer"
-      subtitle="explorecosmos.network")
+      subtitle="explorer.omniflix.network")
     list-item(
-      href="https://cosmos.network"
+      href="https://omniflix.network"
       target="_blank"
-      title="Cosmos Website"
-      subtitle="cosmos.network")
+      title="OmniFlix Website"
+      subtitle="omniflix.network")
 </template>
 
 <script>

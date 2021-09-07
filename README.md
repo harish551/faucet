@@ -1,6 +1,6 @@
-# Cosmos Testnet Faucet
+# OmniFlix Testnet Faucet
 
-This faucet app allows anyone who passes a captcha to request tokens for a Cosmos account address. This app needs to be deployed on a Cosmos SDK based full node, because it relies on using the binary to send tokens.
+This faucet app allows anyone who passes a captcha to request tokens for a OmniFLix account address. This app needs to be deployed on a Cosmos SDK based full node, because it relies on using the binary to send tokens.
 
 **Note**: This faucet backend works only for Cosmos SDK based application whose version is greater than or equal to `v0.40`.
 
@@ -15,7 +15,7 @@ If you don't have a reCAPTCHA site setup for the faucet, now is the time to get 
 The backend requires Go and the `dep` dependency tool to be installed. For the frontend, you also need to have node.js and the `yarn` dependency tool installed. 
 
 ```
-go get git@github.com:vitwit/faucet
+go get git@github.com:harish551/faucet
 ```
 
 ### Install Network Binary
@@ -29,7 +29,7 @@ Make sure to install network binary and add faucet account key in instance where
 First, set the environment variables for the backend, using `./backend/.env` as a template:
 
 ```
-cd $GOPATH/src/github.com/vitwit/faucet/backend
+cd $GOPATH/src/github.com/harish551/faucet/backend
 cp .env .env.local
 vi .env.local
 ```
@@ -60,7 +60,7 @@ Run `go run faucet.go` in the `backend` directory to serve the backend.
 First, set the environment variables for the frontend, using `./frontend/.env` as a template:
 
 ```
-cd $GOPATH/src/github.com/vitwit/faucet/frontend
+cd $GOPATH/src/github.com/harish551/faucet/frontend
 cp .env .env.local
 vi .env.local
 ```
