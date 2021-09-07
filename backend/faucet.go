@@ -40,13 +40,13 @@ type Coins struct {
 	Amount string `json:"amount"`
 }
 
-var chain, chain2 string
+var chain string
 var recaptchaSecretKey string
-var amountFaucet, fees1, fees2 string
+var amountFaucet, fees1 string
 var amountSteak string
 var key string
 var pass string
-var node, node2 string
+var node string
 var publicUrl string
 var maxTokens float64
 var cliName string
@@ -83,10 +83,7 @@ func main() {
 	node = getEnv("FAUCET_NODE")
 	publicUrl = getEnv("FAUCET_PUBLIC_URL")
 	cliName = getEnv("CLI_NAME")
-	node2 = getEnv("FAUCET_NODE_2")
-	chain2 = getEnv("FAUCET_CHAIN_2")
 	fees1 = getEnv("FEES_1")
-	fees2 = getEnv("FEES_2")
 	maxTokens, err = strconv.ParseFloat(getEnv("MAX_TOKENS_ALLOWED"), 64)
 	if err != nil {
 		log.Fatal("MAX_TOKENS_ALLOWED value is invalid")
@@ -214,27 +211,6 @@ func getCoinsHandler(res http.ResponseWriter, request *http.Request) {
 
 			executeCmd(sendFaucet, pass, pass)
 			errMsg = fmt.Sprintf("%s: Successfully sent tokens to  %s", chain, address)
-		}
-
-		// Chain 2 faucet
-		if node2 != "" {
-			//check account balance
-			err = CheckAccountBalance(address, key, node2, chain2)
-
-			if err != nil {
-				isError = true
-				errMsg = fmt.Sprintf("%s, %s: %s", errMsg, chain2, err.Error())
-			} else {
-				// send the coins!
-				sendFaucet := fmt.Sprintf(
-					"%s tx bank send %v %v %v --from %v --node %v --chain-id %v --fees %s -y",
-					cliName, key, address, amountFaucet, key, node2, chain2, fees2)
-				fmt.Println(time.Now().UTC().Format(time.RFC3339), sendFaucet)
-
-				executeCmd(sendFaucet, pass, pass)
-				errMsg = fmt.Sprintf("%s, %s: Successfully sent tokens to  %s", errMsg, chain2, address)
-
-			}
 		}
 
 		// If there is eror in any of chains,then this will be executed
