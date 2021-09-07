@@ -2,7 +2,7 @@
 #app
   router-view
   notifications(:notifications='notifications' theme='cosmos')
-  #bottom Vitwit
+  #bottom OmniFlix
 </template>
 
 
