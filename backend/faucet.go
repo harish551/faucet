@@ -51,7 +51,7 @@ var publicUrl string
 var maxTokens float64
 var cliName string
 
-const ADDR_LENGTH int = 44
+const ADDR_LENGTH int = 47
 
 type claim_struct struct {
 	Address  string `json:"address"`
@@ -69,9 +69,9 @@ func getEnv(key string) string {
 }
 
 func main() {
-	err := godotenv.Load(".env.local", ".env")
+	err := godotenv.Load(".env.local")
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		log.Fatal("Error loading .env.local file")
 	}
 
 	chain = getEnv("FAUCET_CHAIN")

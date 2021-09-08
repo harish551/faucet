@@ -121,7 +121,7 @@ export default {
     },
     bech32Validate(param) {
       try {
-        if (param.length == 40) {
+        if (param.length == 47 && param.startsWith('omniflix')) {
           this.bech32error = null;
           return true;
         } else {
